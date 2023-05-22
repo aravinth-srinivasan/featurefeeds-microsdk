@@ -20,6 +20,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name="com.raweng.dfe.modules.ui.InboxActivity"
+            android:exported="true"/>
+
+        <activity android:name="com.raweng.dfe.modules.ui.MessageActivity"
+            android:exported="true"/>
+
     </application>
 
 </manifest>
