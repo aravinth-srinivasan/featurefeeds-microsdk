@@ -1,14 +1,6 @@
 package com.raweng.microsdkapplication.data
 
-data class Config(
-    var cmsApiKey: String? = null,
-    var cmsAccessToken: String? = null,
-    var dfeSportsKey: String? = null,
-    var cmsApiVersion: String? = null,
-    var dfeApiVersion: String? = null,
-    var contentType: ContentType? = null,
-    var environment: Environment? = null,
-)
+
 
 enum class Environment {
     DEV,
