@@ -9,7 +9,7 @@ import com.contentstack.sdk.Stack
 import com.raweng.dfe.microsdk.featurefeeds.manager.LocalApiManager
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
 import kotlinx.coroutines.flow.Flow
-import com.raweng.dfe.microsdk.featurefeeds.model.Config as LocalConfig
+import com.raweng.dfe.microsdk.featurefeeds.model.ConfigModel as LocalConfig
 
 class FeatureFeedsMicroSDK private constructor() {
     private var mStack: Stack? = null

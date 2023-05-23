@@ -56,8 +56,8 @@ data class FeedModel(
     var createdAt: String? = null,
     @SerializedName("created_by")
     var createdBy: String? = null,
-    @SerializedName("feed_type")
-    var feedType: List<FeedType?>? = null,
+    /*@SerializedName("feed_type")
+    var feedType: List<FeedType?>? = null,*/
     @SerializedName("_in_progress")
     var inProgress: Boolean? = null,
     @SerializedName("locale")

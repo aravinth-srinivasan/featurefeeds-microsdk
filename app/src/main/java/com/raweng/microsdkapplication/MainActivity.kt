@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.FeatureFeedsMicroSDK
-import com.raweng.dfe.microsdk.featurefeeds.model.Config
+import com.raweng.dfe.microsdk.featurefeeds.model.ConfigModel
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
 import com.raweng.dfe.models.config.DFEConfigCallback
 import com.raweng.dfe.models.config.DFEConfigModel
@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
             object : DFEConfigCallback() {
                 override fun onCompletion(apiData: MutableList<DFEConfigModel>?, p1: ErrorModel?) {
                     if (!apiData.isNullOrEmpty()) {
-                        val configSkdModel = Config()
+                        val configSkdModel = ConfigModel()
                         val mConfigModel = apiData[0]
                         val data = JSONObject(mConfigModel.integrations)
                         if (data.has("contentstack")) {

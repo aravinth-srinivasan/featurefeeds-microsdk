@@ -1,4 +1,4 @@
-package com.raweng.microsdkapplication.data.model
+package com.raweng.dfe.microsdk.featurefeeds.model
 
 data class ConfigModel(
     var cmsApiKey: String? = null,
@@ -7,13 +7,14 @@ data class ConfigModel(
     var cmsApiVersion: String? = null,
     var dfeApiVersion: String? = null,
     var contentType: ContentType? = null,
-    var environment: Environment? = null,
+    var environment: String? = null,
+//    var environment: Environment? = null,
 )
 
 enum class Environment {
     DEV,
     PRODUCTION,
-    PREVIEW
+    PREVIEW;
 }
 
 enum class ContentType {
