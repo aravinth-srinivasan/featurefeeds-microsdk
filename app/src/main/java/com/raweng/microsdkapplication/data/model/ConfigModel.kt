@@ -1,4 +1,4 @@
-package com.raweng.microsdkapplication.data
+package com.raweng.microsdkapplication.data.model
 
 data class Config(
     var cmsApiKey: String? = null,
