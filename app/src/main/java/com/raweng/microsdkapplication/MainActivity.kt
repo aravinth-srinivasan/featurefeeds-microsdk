@@ -1,5 +1,6 @@
 package com.raweng.microsdkapplication
 
+import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -11,9 +12,8 @@ import com.raweng.dfe.models.config.DFEConfigCallback
 import com.raweng.dfe.models.config.DFEConfigModel
 import com.raweng.dfe.modules.policy.ErrorModel
 import com.raweng.dfe.modules.policy.RequestType
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.schedulers.Schedulers
 import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
@@ -21,6 +21,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         fetchConfigAndInitMicroSDK()
+        //fetchDFEFeeds()
     }
 
     private fun fetchConfigAndInitMicroSDK() {
@@ -64,24 +65,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun fetchFeatureFeed() {
-        //val appKey = "blt8f37077c228fc690"
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                FeatureFeedsMicroSDK.getInstance().getFeatureFeed("featured_feeds")?.collect {
-                    when(it){
-                        is MicroResult.Failure -> {
-                            Log.e("TAG", "fetchFeatureFeed:Activity Failed " + it.toString())
-                        }
-                        is MicroResult.Success -> {
-                            Log.e("TAG", "fetchFeatureFeed:Activity Successx " + it.toString())
-                        }
+        val disposable =  FeatureFeedsMicroSDK
+            .getInstance()
+            .getFeatureFeed("featured_feeds")
+            ?.observeOn(AndroidSchedulers.mainThread())
+            ?.subscribeOn(Schedulers.io())
+            ?.subscribe({
+                when(it) {
+                    is MicroResult.Failure -> {
+                        Log.e("TAG", "fetchFeatureFeed: Failure", )
                     }
-
+                    is MicroResult.Success -> {
+                        Log.e("TAG", "fetchFeatureFeed: Success"+it.data.toString(), )
+                    }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Log.e("TAG", "fetchFeatureFeed: Error block")
+            }) {
+                Log.e("TAG", "fetchFeatureFeed: Error", )
             }
-        }
     }
 }
