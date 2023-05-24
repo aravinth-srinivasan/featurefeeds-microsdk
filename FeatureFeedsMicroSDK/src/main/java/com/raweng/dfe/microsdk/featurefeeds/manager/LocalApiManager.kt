@@ -1,19 +1,16 @@
 package com.raweng.dfe.microsdk.featurefeeds.manager
 
-import android.util.Log
 import com.contentstack.sdk.*
 import com.raweng.dfe.microsdk.featurefeeds.data.FeatureFeedRepositoryImpl
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import io.reactivex.rxjava3.core.Flowable
+import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedModel.Entry as LocalResponseEntry
 
 
 class LocalApiManager(private val stack: Stack) {
 
-    suspend fun fetchFeatureFeed(contentType: String):Flow<MicroResult<Any>> = flow{
-        val featureFeed = FeatureFeedRepositoryImpl(stack)
-        featureFeed.getFeatureFeed(contentType).collect {
-            emit(it)
-        }
+    fun fetchFeatureFeed(contentType: String): Flowable<MicroResult<ArrayList<LocalResponseEntry>>> {
+        val repository = FeatureFeedRepositoryImpl(stack)
+        return repository.getFeatureFeeds(contentType)
     }
 }

@@ -8,6 +8,7 @@ data class ConfigModel(
     var dfeApiVersion: String? = null,
     var contentType: ContentType? = null,
     var environment: String? = null,
+    var cmsUrl: String? = null,
 //    var environment: Environment? = null,
 )
 

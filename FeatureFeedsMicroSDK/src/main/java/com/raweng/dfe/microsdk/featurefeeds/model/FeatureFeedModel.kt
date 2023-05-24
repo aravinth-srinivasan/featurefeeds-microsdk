@@ -159,7 +159,8 @@ data class FeatureFeedModel(
                     @SerializedName("label")
                     var label: String? = null,
                     @SerializedName("value")
-                    var value: String? = null
+                    var value: String? = null,
+                    var nbaFeedModel:NbaFeedModel? = null
                 )
             }
 
