@@ -8,6 +8,7 @@ import com.contentstack.sdk.Contentstack
 import com.contentstack.sdk.Stack
 import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.manager.LocalApiManager
+import com.raweng.dfe.microsdk.featurefeeds.model.ContentType
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
 import io.reactivex.rxjava3.core.Flowable
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedModel.Entry as LocalResponseEntry
@@ -80,7 +81,8 @@ class FeatureFeedsMicroSDK private constructor() {
         }
     }
 
-    fun getFeatureFeed(contentType: String): Flowable<MicroResult<ArrayList<LocalResponseEntry>>>? {
+    fun getFeatureFeed(contentType: ContentType):
+            Flowable<MicroResult<ArrayList<LocalResponseEntry>>>? {
         return mLocalApiManager?.fetchFeatureFeed(contentType)
     }
 }

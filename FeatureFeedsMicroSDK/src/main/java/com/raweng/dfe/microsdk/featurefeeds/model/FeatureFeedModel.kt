@@ -102,7 +102,9 @@ data class FeatureFeedModel(
             @SerializedName("video")
             var video: Video? = null,
             @SerializedName("web_url")
-            var webUrl: WebUrl? = null
+            var webUrl: WebUrl? = null,
+            @SerializedName("article")
+            val article: Article? = null,
         ) {
             data class Gallery(
                 @SerializedName("full_width_image")
@@ -204,6 +206,33 @@ data class FeatureFeedModel(
                 var publishedDate: String? = null,
                 @SerializedName("title")
                 var title: String? = null
+            )
+
+            data class Article(
+                @SerializedName("additional_content")
+                val additionalContent: String? = null,
+                @SerializedName("content")
+                val content: String? = null,
+                @SerializedName("full_width_image")
+                val fullWidthImage: Image? = null,
+                @SerializedName("half_width_image")
+                val halfWidthImage: Image? = null,
+                @SerializedName("hide_date")
+                val hideDate: Boolean? = null,
+                @SerializedName("hide_title")
+                val hideTitle: Boolean? = null,
+                @SerializedName("hide_label")
+                val hideLabel: Boolean? = null,
+                @SerializedName("_metadata")
+                val metadata: Metadata? = null,
+                @SerializedName("published_date")
+                val publishedDate: String? = null,
+                @SerializedName("spotlight_image")
+                val spotlightImage: Image? = null,
+                @SerializedName("subtitle")
+                val subtitle: String? = null,
+                @SerializedName("title")
+                val title: String? = null
             )
         }
 
