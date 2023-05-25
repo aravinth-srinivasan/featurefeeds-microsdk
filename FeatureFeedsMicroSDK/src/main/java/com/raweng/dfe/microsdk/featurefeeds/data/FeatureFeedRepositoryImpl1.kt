@@ -5,6 +5,7 @@ import com.contentstack.sdk.*
 import com.google.gson.Gson
 import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.mapper.FeatureFeedMapper
+import com.raweng.dfe.microsdk.featurefeeds.model.ContentType
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedModel
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
 import com.raweng.dfe.models.feed.DFEFeedCallback
@@ -21,7 +22,8 @@ import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedModel.Entry as Loca
 
 class FeatureFeedRepositoryImpl1(private val stack: Stack) : FeatureFeedRepository {
 
-    override fun getFeatureFeeds(contentType: String): Flowable<MicroResult<ArrayList<LocalResponseEntry>>> {
+    override fun getFeatureFeeds(contentType: ContentType):
+            Flowable<MicroResult<ArrayList<LocalResponseEntry>>> {
         return Flowable.create({ emitter ->
             val finalCall = fetchCMSFeeds(contentType)
                 .map {
@@ -107,7 +109,7 @@ class FeatureFeedRepositoryImpl1(private val stack: Stack) : FeatureFeedReposito
                         data: MutableList<DFEFeedModel>?,
                         error: ErrorModel?
                     ) {
-                        if (data != null && data.isNotEmpty()) {
+                        if (!data.isNullOrEmpty()) {
                             emitter.onNext(data[0])
                         }
 
@@ -123,10 +125,10 @@ class FeatureFeedRepositoryImpl1(private val stack: Stack) : FeatureFeedReposito
             .toFlowable(BackpressureStrategy.BUFFER)
     }
 
-    private fun fetchCMSFeeds(contentType: String): Flowable<ArrayList<LocalResponseEntry>> {
+    private fun fetchCMSFeeds(contentType: ContentType): Flowable<ArrayList<LocalResponseEntry>> {
         return Flowable.create({ emitter ->
             try {
-                val query: Query = stack.contentType(contentType).query()
+                val query: Query = stack.contentType(contentType.toString()).query()
                 query.setCachePolicy(CachePolicy.NETWORK_ONLY)
                 query.find(object : QueryResultsCallBack() {
                     override fun onCompletion(

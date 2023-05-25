@@ -1,12 +1,12 @@
 package com.raweng.microsdkapplication
 
-import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.FeatureFeedsMicroSDK
 import com.raweng.dfe.microsdk.featurefeeds.model.ConfigModel
+import com.raweng.dfe.microsdk.featurefeeds.model.ContentType
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
 import com.raweng.dfe.models.config.DFEConfigCallback
 import com.raweng.dfe.models.config.DFEConfigModel
@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
     private fun fetchFeatureFeed() {
         val disposable =  FeatureFeedsMicroSDK
             .getInstance()
-            .getFeatureFeed("featured_feeds")
+            .getFeatureFeed(ContentType.FEATURED_FEEDS)
             ?.observeOn(AndroidSchedulers.mainThread())
             ?.subscribeOn(Schedulers.io())
             ?.subscribe({
