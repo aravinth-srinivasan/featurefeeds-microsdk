@@ -10,7 +10,6 @@ import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.manager.LocalApiManager
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
 import io.reactivex.rxjava3.core.Flowable
-import kotlinx.coroutines.flow.Flow
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedModel.Entry as LocalResponseEntry
 import com.raweng.dfe.microsdk.featurefeeds.model.ConfigModel as LocalConfig
 
