@@ -1,9 +1,8 @@
 package com.raweng.dfe.microsdk.featurefeeds.model
-
-
 import com.google.gson.annotations.SerializedName
 
-data class FeatureFeedModel(
+
+data class FeatureFeedResponse(
     @SerializedName("entries")
     var entries: List<Entry?>? = null
 ) {
@@ -99,6 +98,8 @@ data class FeatureFeedModel(
             var gallery: Gallery? = null,
             @SerializedName("nba_feeds")
             var nbaFeeds: NbaFeeds? = null,
+            @SerializedName("article")
+            var article: Article? = null,
             @SerializedName("video")
             var video: Video? = null,
             @SerializedName("web_url")
@@ -106,7 +107,7 @@ data class FeatureFeedModel(
         ) {
             data class Gallery(
                 @SerializedName("full_width_image")
-                var fullWidthImage: Any? = null,
+                var fullWidthImage: Image? = null,
                 @SerializedName("half_width_image")
                 var halfWidthImage: Image? = null,
                 @SerializedName("hide_date")
@@ -137,22 +138,10 @@ data class FeatureFeedModel(
             }
 
             data class NbaFeeds(
-                @SerializedName("full_width_image")
-                var fullWidthImage: Image? = null,
-                @SerializedName("half_width_image")
-                var halfWidthImage: Any? = null,
-                @SerializedName("hide_date")
-                var hideDate: Boolean? = null,
-                @SerializedName("hide_label")
-                var hideLabel: Boolean? = null,
-                @SerializedName("hide_title")
-                var hideTitle: Boolean? = null,
                 @SerializedName("_metadata")
                 var metadata: Metadata? = null,
                 @SerializedName("nba_feeds")
                 var nbaFeeds: NbaFeeds? = null,
-                @SerializedName("type")
-                var type: String? = null
             ) {
 
                 data class NbaFeeds(
@@ -160,13 +149,13 @@ data class FeatureFeedModel(
                     var label: String? = null,
                     @SerializedName("value")
                     var value: String? = null,
-                    var nbaFeedModel:NbaFeedModel? = null
+                    var nbaFeedModel: NbaFeedModel? = null
                 )
             }
 
             data class Video(
                 @SerializedName("full_width_image")
-                var fullWidthImage: Any? = null,
+                var fullWidthImage: Image? = null,
                 @SerializedName("half_width_image")
                 var halfWidthImage: Image? = null,
                 @SerializedName("hide_date")
@@ -189,7 +178,7 @@ data class FeatureFeedModel(
                 @SerializedName("full_width_image")
                 var fullWidthImage: Image? = null,
                 @SerializedName("half_width_image")
-                var halfWidthImage: Any? = null,
+                var halfWidthImage: Image? = null,
                 @SerializedName("hide_date")
                 var hideDate: Boolean? = null,
                 @SerializedName("hide_label")
@@ -205,8 +194,35 @@ data class FeatureFeedModel(
                 @SerializedName("title")
                 var title: String? = null
             )
+
+
+            data class Article(
+                @SerializedName("additional_content")
+                var additionalContent: String?,
+                @SerializedName("content")
+                var content: String?,
+                @SerializedName("full_width_image")
+                var fullWidthImage: Image?,
+                @SerializedName("half_width_image")
+                var halfWidthImage: Image?,
+                @SerializedName("hide_date")
+                var hideDate: Boolean?,
+                @SerializedName("hide_label")
+                var hideLabel: Boolean?,
+                @SerializedName("hide_title")
+                var hideTitle: Boolean?,
+                @SerializedName("_metadata")
+                var metadata: Metadata?,
+                @SerializedName("published_date")
+                var publishedDate: String?,
+                @SerializedName("spotlight_image")
+                var spotlightImage: Any?,
+                @SerializedName("subtitle")
+                var subtitle: String?,
+                @SerializedName("title")
+                var title: String?
+            )
+
         }
-
-
     }
 }
