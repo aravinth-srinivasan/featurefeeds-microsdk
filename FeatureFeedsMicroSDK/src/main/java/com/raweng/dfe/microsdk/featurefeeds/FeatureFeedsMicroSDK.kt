@@ -1,86 +1,74 @@
 package com.raweng.dfe.microsdk.featurefeeds
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
-import com.contentstack.sdk.Config
 import com.contentstack.sdk.Contentstack
 import com.contentstack.sdk.Stack
-import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.manager.LocalApiManager
+import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
-import io.reactivex.rxjava3.core.Flowable
-import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedModel.Entry as LocalResponseEntry
-import com.raweng.dfe.microsdk.featurefeeds.model.ConfigModel as LocalConfig
+import io.reactivex.rxjava3.core.Single
 
 class FeatureFeedsMicroSDK private constructor() {
-    private var mStack: Stack? = null
-    private var mLocalApiManager: LocalApiManager? = null
+    private var stack: Stack? = null
+    private var localApiManager: LocalApiManager? = null
 
     companion object {
-        @SuppressLint("StaticFieldLeak")
-        private var instance: FeatureFeedsMicroSDK? = null
+        private val localInstance: FeatureFeedsMicroSDK by lazy { FeatureFeedsMicroSDK() }
 
         @JvmStatic
-        fun getInstance(): FeatureFeedsMicroSDK {
-            if (instance == null) {
-                synchronized(this) {
-                    if (instance == null) {
-                        instance = FeatureFeedsMicroSDK()
-                    }
-                }
-            }
-            return instance!!
-        }
+        fun getInstance(): FeatureFeedsMicroSDK = localInstance
 
         @JvmStatic
-        fun init(context: Context, config: LocalConfig) {
+        fun init(
+            context: Context,
+            dfeSportsKey: String?,
+            dfeEnv: String?,
+            csApiKey: String?,
+            csAccessToken: String?,
+            csEnv: String?
+        ) {
             try {
-                config.apply {
-                    val mConfigHost = Config()
-                    mConfigHost.host = cmsUrl
-                    if (isAllFieldsAreNotEmptyOrNull(this)) {
-                        initContentStack(context, config, mConfigHost)
-                        setupLocalApiManager()
-                    }
+                if (isAllFieldsAreNotEmptyOrNull(csApiKey, csAccessToken, csEnv)) {
+                    initContentStack(context, csApiKey, csAccessToken, csEnv)
+                    setupLocalApiManager()
                 }
-                DFEManager.init(context)
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e("TAG", "initContentStack: Failed")
             }
         }
 
-
-        private fun isAllFieldsAreNotEmptyOrNull(config: LocalConfig): Boolean {
-            return listOf(
-                config.cmsApiKey,
-                config.cmsAccessToken,
-                config.environment,
-                config.cmsUrl
-            ).all { !it.isNullOrEmpty() }
+        private fun isAllFieldsAreNotEmptyOrNull(
+            csApiKey: String?,
+            csAccessToken: String?,
+            csEnv: String?
+        ): Boolean {
+            return listOf(csApiKey, csAccessToken, csEnv).all { !it.isNullOrEmpty() }
         }
 
-        private fun initContentStack(context: Context, config: LocalConfig, hostConfig: Config) {
-            getInstance().mStack = Contentstack.stack(
+        private fun initContentStack(
+            context: Context,
+            csApiKey: String?,
+            csAccessToken: String?,
+            csEnv: String?
+        ) {
+            localInstance.stack = Contentstack.stack(
                 context,
-                config.cmsApiKey ?: "",
-                config.cmsAccessToken ?: "",
-                config.environment ?: "",
-                hostConfig
+                csApiKey.orEmpty(),
+                csAccessToken.orEmpty(),
+                csEnv.orEmpty()
             )
         }
 
         private fun setupLocalApiManager() {
-            getInstance().apply {
-                this.mStack?.let {
-                    mLocalApiManager = LocalApiManager(it)
-                }
-            }
+            localInstance.stack?.run {
+                localInstance.localApiManager = LocalApiManager(this)
+            } ?: Log.e("TAG", "please init content stack")
         }
     }
 
-    fun getFeatureFeed(contentType: String): Flowable<MicroResult<ArrayList<LocalResponseEntry>>>? {
-        return mLocalApiManager?.fetchFeatureFeed(contentType)
+    fun getFeatureFeed(csContentType: String): Single<MicroResult<List<FeaturedFeedModel>>>? {
+        return localApiManager?.fetchFeatureFeed(csContentType)
     }
 }
