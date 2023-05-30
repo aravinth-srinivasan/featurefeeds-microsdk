@@ -6,6 +6,9 @@ import android.util.Log
 import android.widget.TextView
 import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.FeatureFeedsMicroSDK
+import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
+import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
+import com.raweng.dfe.microsdk.featurefeeds.utils.MicroError
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
 import com.raweng.dfe.models.config.DFEConfigCallback
 import com.raweng.dfe.models.config.DFEConfigModel
@@ -13,6 +16,9 @@ import com.raweng.dfe.modules.policy.ErrorModel
 import com.raweng.dfe.modules.policy.RequestType
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
@@ -31,6 +37,7 @@ class MainActivity : AppCompatActivity() {
         var csApiKey = ""
         var csAccessToken = ""
         var csEnv = ""
+        var csUrl = ""
 
         DFEManager.getInst().queryManager.getConfig(
             "",
@@ -53,17 +60,18 @@ class MainActivity : AppCompatActivity() {
                                 csAccessToken =
                                     contentStack.getString("delivery_token")
                             }
-                            /*if (contentStack.has("url")) {
-                                configSkdModel.cmsUrl = contentStack.getString("url")
-                            }*/
+                            if (contentStack.has("url")) {
+                                csUrl = contentStack.getString("url")
+                            }
                         }
                         FeatureFeedsMicroSDK.init(
                             this@MainActivity,
                             "",
                             "",
+                            csUrl = csUrl,
                             csApiKey = csApiKey,
                             csAccessToken = csAccessToken,
-                            csEnv = csEnv
+                            csEnv = csEnv,
                         )
                         fetchFeatureFeed()
                     } else {
@@ -74,32 +82,70 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun fetchFeatureFeed() {
+        FeatureFeedsMicroSDK.getInstance()
+            .getFeatureFeed("featured_feeds", object : FeatureFeedResponseListener {
+                override fun onSuccess(feeds: List<FeaturedFeedModel>) {
+                    Log.e("TAG", "onSuccess: " + feeds.size)
+                    findViewById<TextView>(R.id.textV).setText(feeds.get(0).title)
+                }
+
+                override fun onError(error: MicroError) {
+                    Log.e("TAG", "onSuccess: " + error.errorMsg)
+                    findViewById<TextView>(R.id.textV).setText(error.errorMsg)
+                }
+            })
+    }
+
+/*    private fun fetchFeatureFeed() {
         FeatureFeedsMicroSDK.Companion.getInstance()
-        val disposable =  FeatureFeedsMicroSDK
+        val disposable = FeatureFeedsMicroSDK
             .getInstance()
             .getFeatureFeed("featured_feeds")
             ?.observeOn(AndroidSchedulers.mainThread())
             ?.subscribeOn(Schedulers.io())
             ?.subscribe({
-                when(it) {
+                when (it) {
                     is MicroResult.Failure -> {
-                        Log.e("TAG", "fetchFeatureFeed: Failure", )
+                        Log.e("TAG", "fetchFeatureFeed: Failure")
                     }
                     is MicroResult.Success -> {
                         it.data.map {
-                            Log.e("TAG", "fetchFeatureFeed: Success"+it.title, )
-                            it.feeds?.map {data->
-                                Log.e("TAG", "fetchFeatureFeed: Success"+data.toString(), )
+                            Log.e("TAG", "fetchFeatureFeed: Success" + it.title)
+                            it.feeds?.map { data ->
+                                Log.e("TAG", "fetchFeatureFeed: Success" + data.toString())
                             }
                         }
                     }
                 }
             }) {
-                Log.e("TAG", "fetchFeatureFeed: Error", )
+                Log.e("TAG", "fetchFeatureFeed: Error")
             }
-    }
+    }*/
 
-    private fun fetchQuery() {
+    /*private fun fetchFeatureFeed() {
+        CoroutineScope(Dispatchers.IO).launch {
+            FeatureFeedsMicroSDK
+                .getInstance()
+                .getFeatureFeed("featured_feeds")
+                ?.collect{
+                    when(it) {
+                        is MicroResult.Failure -> {
+                            Log.e("TAG", "fetchFeatureFeed: ${it.error}", )
+                        }
+                        is MicroResult.Success -> {
+                            it.data.map {
+                                Log.e("TAG", "Feed Title: ${it.title}", )
+                                it.feeds?.map {feedModel ->
+                                    Log.e("TAG", "Feed Type: ${feedModel.toString()}", )
+                                }
+                            }
+                        }
+                        null -> {
+                            Log.e("TAG", "Feed Type: null state", )
+                        }
+                    }
+                }
 
-    }
+        }
+    }*/
 }

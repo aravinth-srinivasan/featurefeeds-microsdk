@@ -1,10 +1,8 @@
 package com.raweng.dfe.microsdk.featurefeeds.data
 
-import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
-import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
-import io.reactivex.rxjava3.core.Single
+import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
 
 interface FeatureFeedRepository {
-    fun getFeatureFeeds(csContentType: String): Single<MicroResult<List<FeaturedFeedModel>>>
+    fun getFeatureFeeds(csContentType: String, responseListener: FeatureFeedResponseListener)
 
 }

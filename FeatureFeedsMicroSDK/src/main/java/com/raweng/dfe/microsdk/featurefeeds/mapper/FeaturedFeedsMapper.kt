@@ -94,10 +94,8 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
         }
     }
 
-    //TODO
     private fun getDFEThumbnail(feedType: FeatureFeedResponse.Entry.FeedType?): String {
-        //if (feedType?.nbaFeeds)
-        return ""
+        return feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel?.media?.get(0)?.thumbnail.orEmpty()
     }
 
     private fun getHideDate(feedType: FeatureFeedResponse.Entry.FeedType?): Boolean? {

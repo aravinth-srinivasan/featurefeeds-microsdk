@@ -2,12 +2,12 @@ package com.raweng.dfe.microsdk.featurefeeds
 
 import android.content.Context
 import android.util.Log
+import com.contentstack.sdk.Config
 import com.contentstack.sdk.Contentstack
 import com.contentstack.sdk.Stack
+import com.raweng.dfe.DFEManager
+import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
 import com.raweng.dfe.microsdk.featurefeeds.manager.LocalApiManager
-import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
-import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
-import io.reactivex.rxjava3.core.Single
 
 class FeatureFeedsMicroSDK private constructor() {
     private var stack: Stack? = null
@@ -24,13 +24,14 @@ class FeatureFeedsMicroSDK private constructor() {
             context: Context,
             dfeSportsKey: String?,
             dfeEnv: String?,
+            csUrl: String?,
             csApiKey: String?,
             csAccessToken: String?,
-            csEnv: String?
+            csEnv: String?,
         ) {
             try {
-                if (isAllFieldsAreNotEmptyOrNull(csApiKey, csAccessToken, csEnv)) {
-                    initContentStack(context, csApiKey, csAccessToken, csEnv)
+                if (isAllFieldsAreNotEmptyOrNull(csUrl, csApiKey, csAccessToken, csEnv)) {
+                    initContentStack(context, csUrl, csApiKey, csAccessToken, csEnv)
                     setupLocalApiManager()
                 }
             } catch (e: Exception) {
@@ -40,15 +41,17 @@ class FeatureFeedsMicroSDK private constructor() {
         }
 
         private fun isAllFieldsAreNotEmptyOrNull(
+            csUrl: String?,
             csApiKey: String?,
             csAccessToken: String?,
             csEnv: String?
         ): Boolean {
-            return listOf(csApiKey, csAccessToken, csEnv).all { !it.isNullOrEmpty() }
+            return listOf(csUrl, csApiKey, csAccessToken, csEnv).all { !it.isNullOrEmpty() }
         }
 
         private fun initContentStack(
             context: Context,
+            csUrl: String?,
             csApiKey: String?,
             csAccessToken: String?,
             csEnv: String?
@@ -57,8 +60,12 @@ class FeatureFeedsMicroSDK private constructor() {
                 context,
                 csApiKey.orEmpty(),
                 csAccessToken.orEmpty(),
-                csEnv.orEmpty()
+                csEnv.orEmpty(),
+                Config().apply {
+                    host = csUrl
+                }
             )
+            DFEManager.init(context)
         }
 
         private fun setupLocalApiManager() {
@@ -68,7 +75,7 @@ class FeatureFeedsMicroSDK private constructor() {
         }
     }
 
-    fun getFeatureFeed(csContentType: String): Single<MicroResult<List<FeaturedFeedModel>>>? {
-        return localApiManager?.fetchFeatureFeed(csContentType)
+    fun getFeatureFeed(csContentType: String, responseListener: FeatureFeedResponseListener) {
+        localApiManager?.fetchFeatureFeed(csContentType, responseListener)
     }
 }
