@@ -26,14 +26,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        fetchConfigAndInitMicroSDK()
         findViewById<AppCompatButton>(R.id.btnFetch).setOnClickListener {
-            fetchConfigAndInitMicroSDK()
+            fetchFeatureFeed()
         }
     }
 
     private fun fetchConfigAndInitMicroSDK() {
-
-
         DFEManager.getInst().queryManager.getConfig(
             "",
             RequestType.Network,
@@ -50,7 +49,6 @@ class MainActivity : AppCompatActivity() {
                             csAccessToken = csAccessToken,
                             csEnv = csEnv,
                         )
-                        fetchFeatureFeed()
                     } else {
                         Log.e("TAG", "onCompletion: " + p1.toString())
                     }
@@ -81,6 +79,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun fetchFeatureFeed() {
+        findViewById<TextView>(R.id.textV).text = "Please wait fetching..."
         FeatureFeedsMicroSDK.getInstance()
             .getFeatureFeed("featured_feeds", object : FeatureFeedResponseListener {
                 override fun onSuccess(feeds: List<FeaturedFeedModel>) {
