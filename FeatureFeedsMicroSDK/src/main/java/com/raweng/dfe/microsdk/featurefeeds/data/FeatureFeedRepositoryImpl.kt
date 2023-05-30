@@ -10,108 +10,123 @@ import com.raweng.dfe.microsdk.featurefeeds.mapper.FeaturedFeedsMapper
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse
 import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroError
-import com.raweng.dfe.microsdk.featurefeeds.utils.MicroResult
 import com.raweng.dfe.models.feed.DFEFeedCallback
 import com.raweng.dfe.models.feed.DFEFeedModel
 import com.raweng.dfe.modules.policy.ErrorModel
 import com.raweng.dfe.modules.policy.RequestType
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.*
-import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse.Entry as LocalResponseEntry
 
-internal class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepository {
+class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepository {
+
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + Job())
 
     override fun getFeatureFeeds(
         csContentType: String,
         responseListener: FeatureFeedResponseListener
     ) {
-        try {
-            val result = fetchCMSFeeds(csContentType)
-            result.observeOn(AndroidSchedulers.mainThread())
-                .subscribeOn(Schedulers.io())
-                .subscribe({
-                    when (it) {
-                        is MicroResult.Failure -> {
-                            responseListener.onError(it.error)
-                        }
-                        is MicroResult.Success -> {
-                            responseListener.onSuccess(it.data)
-                        }
-                    }
-                }, { error ->
-                    responseListener.onError(MicroError(error.message ?: ""))
-                })
-        } catch (e: Exception) {
-            responseListener.onError(MicroError(e.message ?: "", exception = e))
-        }
+        fetchAndGenerateList(csContentType, responseListener)
     }
 
 
-    private fun fetchCMSFeeds(contentType: String): Flowable<MicroResult<List<FeaturedFeedModel>>> {
-        return Flowable.defer {
-            val query: Query = stack.contentType(contentType).query()
-            query.setCachePolicy(CachePolicy.NETWORK_ONLY)
-
-            Flowable.create<MicroResult<List<FeaturedFeedModel>>>({ emitter ->
-                query.find(object : QueryResultsCallBack() {
-                    @SuppressLint("CheckResult")
-                    override fun onCompletion(
-                        responseType: ResponseType?,
-                        queryresult: QueryResult?,
-                        error: Error?
-                    ) {
-                        if (error == null) {
-                            getFeatureFeedResponseList(queryresult)
-                                .subscribe({ finalList ->
-                                    emitter.onNext(MicroResult.Success(finalList))
-                                    emitter.onComplete()
-                                }, {
-                                    emitter.onError(Throwable(it.message))
-                                    emitter.onComplete()
-                                })
-                        } else {
-                            emitter.onError(Throwable(error.errorMessage))
-                            emitter.onComplete()
-                        }
+    private fun fetchAndGenerateList(
+        csContentType: String,
+        responseListener: FeatureFeedResponseListener
+    ) {
+        val job = coroutineScope.launch {
+            var isError = false
+            try {
+                val response = fetchCMSFeeds(csContentType).catch {
+                    isError = true
+                    withContext(Dispatchers.Main) {
+                        responseListener.onError(MicroError(errorMsg = it.message ?: ""))
                     }
-                })
-            }, BackpressureStrategy.BUFFER)
-        }.subscribeOn(Schedulers.io())
-    }
+                }.firstOrNull()
 
-    private fun getFeatureFeedResponseList(queryResult: QueryResult?): Flowable<List<FeaturedFeedModel>> {
-        return if (queryResult != null && !queryResult.resultObjects.isNullOrEmpty()) {
-            Flowable.defer {
-                Flowable.fromIterable(queryResult.resultObjects).flatMap { resultObject ->
-                    val resultJson = resultObject.toJSON().toString()
-                    val finalData = Gson().fromJson(resultJson, LocalResponseEntry::class.java)
-                    val feedTypeList = finalData.feedType ?: emptyList()
-                    Flowable.fromIterable(feedTypeList)
-                        .flatMapMaybe { feedType ->
-                            fetchAndModifiedFeedTypeNBAData(feedType)
-                        }
-                        .toList()
-                        .doOnSuccess { modifiedFeedTypeList ->
-                            finalData.feedType = modifiedFeedTypeList
-                        }
-                        .toFlowable()
-                        ?.flatMap {
-                            val mapper = FeaturedFeedsMapper(featuredFeeds = finalData)
-                            Flowable.just(mapper.getFeatureFeeds())
-                        }
+                if (!isError) {
+                    val generatedList = getFeatureFeedResponseList(response)
+                    withContext(Dispatchers.Main) {
+                        responseListener.onSuccess(generatedList)
+                    }
                 }
-                    .toList()
-                    .toFlowable()
-            }.subscribeOn(Schedulers.io())
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    responseListener.onError(MicroError(errorMsg = e.message ?: ""))
+                }
+            }
+        }
+
+        job.invokeOnCompletion {
+            coroutineScope.cancel()
+        }
+    }
+
+    private suspend fun getFeatureFeedResponseList(queryResult: QueryResult?): List<FeaturedFeedModel> {
+        return if (queryResult != null && !queryResult.resultObjects.isNullOrEmpty()) {
+            queryResult.resultObjects.mapIndexed { index, entry ->
+                val resultJson = entry?.toJSON().toString()
+                val finalData = Gson().fromJson(resultJson, LocalResponseEntry::class.java)
+                val feedTypeList = finalData.feedType ?: emptyList()
+                val modifiedFeedTypeList =
+                    feedTypeList.mapIndexed { feedIndex: Int, feedType: FeatureFeedResponse.Entry.FeedType? ->
+                        fetchAndModifiedFeedTypeNBAData(feedType)
+                    }
+                finalData.feedType = modifiedFeedTypeList
+                val mapper = FeaturedFeedsMapper(featuredFeeds = finalData)
+                mapper.getFeatureFeeds()
+            }.sortedBy { it.order }
         } else {
-            Flowable.just(emptyList())
+            emptyList()
         }
     }
 
 
-    private fun fetchDFEFeeds(nid: String): Flowable<DFEFeedModel> {
-        return Flowable.create({ emitter ->
+    private suspend fun fetchAndModifiedFeedTypeNBAData(feedType: FeatureFeedResponse.Entry.FeedType?): FeatureFeedResponse.Entry.FeedType? {
+        val nid = feedType?.nbaFeeds?.nbaFeeds?.value ?: ""
+        return if (nid.isNotEmpty()) {
+            try {
+                val dfeFeeds = fetchDFEFeeds(nid).firstOrNull()
+                if (dfeFeeds != null) {
+                    val mapper = DFENBAFeedMapper(dfeFeeds)
+                    feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel = mapper.getNbaFeedModel()
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+            feedType
+        } else {
+            feedType
+        }
+    }
+
+
+    private suspend fun fetchCMSFeeds(csContentType: String): Flow<QueryResult?> = flow {
+        val queryResult = suspendCancellableCoroutine<QueryResult?> { continuation ->
+            val query: Query = stack.contentType(csContentType).query()
+            query.setCachePolicy(CachePolicy.NETWORK_ONLY)
+            query.find(object : QueryResultsCallBack() {
+                @SuppressLint("CheckResult")
+                override fun onCompletion(
+                    responseType: ResponseType?,
+                    queryresult: QueryResult?,
+                    error: Error?
+                ) {
+                    if (queryresult != null) {
+                        continuation.resumeWith(Result.success(queryresult))
+                    } else if (error != null) {
+                        continuation.resumeWith(Result.failure(Throwable(error.errorMessage)))
+                    } else {
+                        continuation.resumeWith(Result.success(null))
+                    }
+                }
+            })
+        }
+        emit(queryResult)
+    }.flowOn(Dispatchers.IO)
+
+    private fun fetchDFEFeeds(nid: String): Flow<DFEFeedModel?> = flow {
+        val dfeFeedModel = suspendCancellableCoroutine<DFEFeedModel?> { continuation ->
             DFEManager.getInst().queryManager.getFeed(
                 getFields(),
                 nid,
@@ -122,39 +137,21 @@ internal class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeed
                         error: ErrorModel?
                     ) {
                         if (data != null && data.isNotEmpty()) {
-                            emitter.onNext(data[0])
+                            continuation.resumeWith(Result.success(data[0]))
+                        } else if (error != null) {
+                            continuation.resumeWith(Result.failure(Throwable(error.errorMessage)))
+                        } else {
+                            continuation.resumeWith(Result.success(null))
                         }
-
-                        if (error != null) {
-                            emitter.onError(Throwable(error.errorMessage))
-                        }
-                        emitter.onComplete()
                     }
                 }
             )
-        }, BackpressureStrategy.BUFFER)
-    }
-
-
-    private fun fetchAndModifiedFeedTypeNBAData(feedType: FeatureFeedResponse.Entry.FeedType?): Maybe<FeatureFeedResponse.Entry.FeedType?> {
-        val nid = feedType?.nbaFeeds?.nbaFeeds?.value ?: ""
-        return if (nid.isNotEmpty()) {
-            val fetchDFEFeedAndUpdatedToList = fetchDFEFeeds(nid)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map { dfeFeeds ->
-                    val mapper = DFENBAFeedMapper(dfeFeeds)
-                    feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel = mapper.getNbaFeedModel()
-                    feedType
-                }
-            fetchDFEFeedAndUpdatedToList?.firstElement() ?: Maybe.empty()
-        } else {
-            Maybe.just(feedType)
         }
-    }
+        emit(dfeFeedModel)
+    }.flowOn(Dispatchers.IO)
 
     private fun getFields(): String {
         return "uid,nid,title,published_date,feed_type,category,media{thumbnail}"
     }
-}
 
+}

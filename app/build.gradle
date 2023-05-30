@@ -54,9 +54,11 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation project(path: ':FeatureFeedsMicroSDK')
 
+    //TODO remove
     //implementation 'io.realm:realm-gradle-plugin:10.10.1'
-    implementation "io.realm:realm-android-library:10.10.1"
-    implementation "io.realm:realm-annotations:10.10.1"
+    /*implementation "io.realm:realm-android-library:10.10.1"
+    implementation "io.realm:realm-annotations:10.10.1"*/
+
     implementation project(path: ':dfep-nba-3.7.2')
     implementation 'com.contentstack.sdk:android:3.12.0'
     implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'

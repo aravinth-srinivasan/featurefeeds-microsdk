@@ -1,4 +1,4 @@
-pluginManagement {
+/*pluginManagement {
     repositories {
         google()
         mavenCentral()
@@ -23,7 +23,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
     }
-}
+}*/
 rootProject.name = "MicroSDKApplication"
 include ':FeatureFeedsMicroSDK'
 include ':dfep-nba-3.7.2'

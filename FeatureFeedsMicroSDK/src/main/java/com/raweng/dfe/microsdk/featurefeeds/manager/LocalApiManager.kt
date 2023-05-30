@@ -9,6 +9,6 @@ internal class LocalApiManager(private val stack: Stack) {
 
     fun fetchFeatureFeed(csContentType: String, responseListener: FeatureFeedResponseListener) {
         val repository = FeatureFeedRepositoryImpl(stack)
-        return repository.getFeatureFeeds(csContentType, responseListener)
+        repository.getFeatureFeeds(csContentType, responseListener)
     }
 }
