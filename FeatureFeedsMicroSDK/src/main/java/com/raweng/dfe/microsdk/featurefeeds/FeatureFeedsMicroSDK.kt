@@ -8,29 +8,39 @@ import com.contentstack.sdk.Stack
 import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
 import com.raweng.dfe.microsdk.featurefeeds.manager.LocalApiManager
+import com.raweng.dfe.microsdk.featurefeeds.type.DateFormat
 
 class FeatureFeedsMicroSDK private constructor() {
     private var stack: Stack? = null
     private var localApiManager: LocalApiManager? = null
 
     companion object {
+        private const val DEFAULT_DATE_FORMAT = "MMMM dd, yyyy"
         private val localInstance: FeatureFeedsMicroSDK by lazy { FeatureFeedsMicroSDK() }
+        private var dateFormat:String = ""
+        private var appScheme: String? = null
+        private var dateFormatType: DateFormat? = null
 
         @JvmStatic
         fun getInstance(): FeatureFeedsMicroSDK = localInstance
 
         @JvmStatic
-        fun init(
+        fun initialize(
             context: Context,
-            dfeSportsKey: String?,
-            dfeEnv: String?,
             csUrl: String?,
             csApiKey: String?,
             csAccessToken: String?,
             csEnv: String?,
+            appScheme: String?,
+            dateFormatType: DateFormat?,
+            dateFormat: String? = null
         ) {
+            this.dateFormat = dateFormat.takeUnless { it.isNullOrEmpty() } ?: DEFAULT_DATE_FORMAT
+            this.appScheme = appScheme
+            this.dateFormatType = dateFormatType
             try {
-                if (isAllFieldsAreNotEmptyOrNull(csUrl, csApiKey, csAccessToken, csEnv)) {
+                if (isAllFieldsAreNotEmptyOrNull(csUrl, csApiKey, csAccessToken, csEnv)
+                ) {
                     initContentStack(context, csUrl, csApiKey, csAccessToken, csEnv)
                     setupLocalApiManager()
                 }
@@ -65,17 +75,21 @@ class FeatureFeedsMicroSDK private constructor() {
                     host = csUrl
                 }
             )
-            DFEManager.init(context)
+            //DFEManager.init(context)
         }
 
         private fun setupLocalApiManager() {
             localInstance.stack?.run {
-                localInstance.localApiManager = LocalApiManager(this)
+                localInstance.localApiManager =
+                    LocalApiManager(appScheme, dateFormatType, dateFormat, this)
             } ?: Log.e("TAG", "please init content stack")
         }
     }
 
-    fun getFeatureFeed(csContentType: String, responseListener: FeatureFeedResponseListener) {
+    fun getFeatureFeed(
+        csContentType: String,
+        responseListener: FeatureFeedResponseListener
+    ) {
         localApiManager?.fetchFeatureFeed(csContentType, responseListener)
     }
 }

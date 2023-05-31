@@ -5,8 +5,8 @@ enum class SourceType {
 
     override fun toString(): String {
         return when (this) {
-            CONTENTSTACK -> CONTENTSTACK.name.lowercase()
-            DFE -> DFE.name.lowercase()
+            CONTENTSTACK -> CONTENTSTACK.name.uppercase()
+            DFE -> DFE.name.uppercase()
         }
     }
 }

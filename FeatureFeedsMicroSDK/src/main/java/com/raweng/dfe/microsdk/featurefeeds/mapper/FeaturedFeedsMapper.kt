@@ -2,37 +2,45 @@ package com.raweng.dfe.microsdk.featurefeeds.mapper
 
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse
 import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
+import com.raweng.dfe.microsdk.featurefeeds.type.DateFormat
 import com.raweng.dfe.microsdk.featurefeeds.type.FeedType
 import com.raweng.dfe.microsdk.featurefeeds.type.SourceType
+import com.raweng.dfe.microsdk.featurefeeds.utils.Utils
 
-class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) {
+class FeaturedFeedsMapper(
+    private val appScheme: String?,
+    private val dateFormatType: DateFormat?,
+    private val dateFormat: String,
+    private val featuredFeeds: FeatureFeedResponse.Entry
+) {
 
     fun getFeatureFeeds(): FeaturedFeedModel {
         return FeaturedFeedModel().apply {
-            uid = featuredFeeds.uid
             title = featuredFeeds.title
+            updatedAt = featuredFeeds.updatedAt
+            uid = featuredFeeds.uid
             order = featuredFeeds.order
             feeds = getFeedList()
         }
     }
 
-    //TODO
     private fun getFeedList(): List<FeaturedFeedModel.FeedModel> {
         return featuredFeeds.feedType?.map {
             FeaturedFeedModel.FeedModel(
-                feedType = getFeedType(it),
                 title = getTitle(it),
-                publishedDate = getDate(it),
-                fullWidthImageUrl = getFullWidthImageUrl(it),
-                halfWidthImageUrl = getHalfWidthImageUrl(it),
+                date = getDate(it),
+                thumbnail = getThumbnail(featuredFeeds.feedType?.size, it),
+                feedType = getFeedType(it),
+                feedId = getFeedId(it),
+                feedPosition = getFeedPosition(it),
                 hideDate = getHideDate(it),
                 hideTitle = getHideTitle(it),
                 hideLabel = getHideLabel(it),
-                clickThroughLink = getClickThroughLink(it), //TODO need to handle
-                uid = getUid(it),
-                nid = getNid(it),
-                source = getSource(it),
-            )
+                clickthroughLink = "",
+                dataSource = getSource(it),
+            ).apply {
+                clickthroughLink = getGenerateClickThroughLink(this)
+            }
         } ?: arrayListOf()
     }
 
@@ -61,7 +69,7 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
     }
 
     private fun getDate(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
-        return when {
+        val publishedDate: String? = when {
             feedType?.article != null -> feedType.article?.publishedDate
             feedType?.video != null -> feedType.video?.publishedDate
             feedType?.webUrl != null -> feedType.webUrl?.publishedDate
@@ -69,34 +77,55 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
             feedType?.nbaFeeds != null -> feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.publishedDateString
             else -> null
         }
+
+        if (!publishedDate.isNullOrEmpty()) {
+            val date = if (feedType?.nbaFeeds is FeatureFeedResponse.Entry.FeedType.NbaFeeds) {
+                Utils.convertTimestampToDate(publishedDate.toLong())
+            } else {
+                Utils.parseDate(publishedDate)
+            }
+            if (dateFormatType == DateFormat.HOURS_AGO) {
+                return date?.let { Utils.timeAgoSinceAccessibility(it,dateFormat) }
+            } else {
+                return date?.let { Utils.formatDateToString(it,dateFormat) }
+            }
+        }
+        return null
     }
 
-    private fun getFullWidthImageUrl(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
+    private fun getThumbnail(
+        totalSize: Int?,
+        feedType: FeatureFeedResponse.Entry.FeedType?
+    ): String? {
+        val totalSizeData = totalSize ?: 0
         return when {
-            feedType?.article != null -> feedType.article?.fullWidthImage?.url
-            feedType?.video != null -> feedType.video?.fullWidthImage?.url
-            feedType?.webUrl != null -> feedType.webUrl?.fullWidthImage?.url
-            feedType?.gallery != null -> feedType.gallery?.fullWidthImage?.url
-            feedType?.nbaFeeds != null -> ""
+            feedType?.article != null -> if (totalSizeData >= 1) (feedType.article?.halfWidthImage?.url) else (feedType.article?.fullWidthImage?.url)
+            feedType?.video != null -> if (totalSizeData >= 1) (feedType.video?.halfWidthImage?.url) else (feedType.video?.fullWidthImage?.url)
+            feedType?.webUrl != null -> if (totalSizeData >= 1) (feedType.webUrl?.halfWidthImage?.url) else (feedType.webUrl?.fullWidthImage?.url)
+            feedType?.gallery != null -> if (totalSizeData >= 1) (feedType.gallery?.halfWidthImage?.url) else (feedType.gallery?.fullWidthImage?.url)
+            feedType?.nbaFeeds != null -> getDFEThumbnail(totalSizeData, feedType)
             else -> null
         }
     }
 
 
-    private fun getHalfWidthImageUrl(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
-        return when {
-            feedType?.article != null -> feedType.article?.halfWidthImage?.url
-            feedType?.video != null -> feedType.video?.halfWidthImage?.url
-            feedType?.webUrl != null -> feedType.webUrl?.halfWidthImage?.url
-            feedType?.gallery != null -> feedType.gallery?.halfWidthImage?.url
-            feedType?.nbaFeeds != null -> getDFEThumbnail(feedType)
-            else -> null
+    private fun getDFEThumbnail(
+        totalSize: Int,
+        feedType: FeatureFeedResponse.Entry.FeedType?
+    ): String {
+        return if (totalSize >= 1) {
+            feedType?.nbaFeeds?.nbaFeeds?.halfWidthImage?.url
+                ?: feedType?.nbaFeeds?.nbaFeeds?.fullWidthImage?.url
+                ?: feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel?.media?.getOrNull(0)?.thumbnail
+                ?: ""
+        } else {
+            feedType?.nbaFeeds?.nbaFeeds?.fullWidthImage?.url
+                ?: feedType?.nbaFeeds?.nbaFeeds?.halfWidthImage?.url
+                ?: feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel?.media?.getOrNull(0)?.thumbnail
+                ?: ""
         }
     }
 
-    private fun getDFEThumbnail(feedType: FeatureFeedResponse.Entry.FeedType?): String {
-        return feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel?.media?.get(0)?.thumbnail.orEmpty()
-    }
 
     private fun getHideDate(feedType: FeatureFeedResponse.Entry.FeedType?): Boolean? {
         return when {
@@ -133,27 +162,31 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
     }
 
 
-    private fun getClickThroughLink(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
-        return when {
-            feedType?.webUrl != null -> feedType.webUrl?.link
-            feedType?.video != null -> feedType.video?.videoLink
-            else -> null
-        }
+    private fun getGenerateClickThroughLink(feedType: FeaturedFeedModel.FeedModel): String {
+        return "$appScheme://screen/feed_detail/${feedType.feedType?.lowercase() ?: ""}?position=${feedType.feedPosition ?: 0}&source=${feedType.dataSource?.lowercase() ?: ""}&feed_id=${feedType.feedId ?: ""}"
     }
 
-    private fun getUid(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
+    private fun getFeedId(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
         return when {
             feedType?.article != null -> feedType.article?.metadata?.uid
             feedType?.video != null -> feedType.video?.metadata?.uid
             feedType?.webUrl != null -> feedType.webUrl?.metadata?.uid
             feedType?.gallery != null -> feedType.gallery?.metadata?.uid
-            feedType?.nbaFeeds != null -> feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.uid
+            feedType?.nbaFeeds != null -> feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.nid
             else -> null
         }
     }
 
-    private fun getNid(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
-        return feedType?.nbaFeeds?.nbaFeeds?.value
+
+    private fun getFeedPosition(feedType: FeatureFeedResponse.Entry.FeedType?): Int? {
+        return when {
+            feedType?.article != null -> feedType.article?.position
+            feedType?.video != null -> feedType.video?.position
+            feedType?.gallery != null -> feedType.gallery?.position
+            feedType?.webUrl != null -> feedType.webUrl?.position
+            feedType?.nbaFeeds != null -> feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.position
+            else -> null
+        }
     }
 
     private fun getSource(feedType: FeatureFeedResponse.Entry.FeedType?): String {

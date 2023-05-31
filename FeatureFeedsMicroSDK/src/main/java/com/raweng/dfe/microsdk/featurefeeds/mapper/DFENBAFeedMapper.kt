@@ -3,15 +3,17 @@ package com.raweng.dfe.microsdk.featurefeeds.mapper
 import com.raweng.dfe.microsdk.featurefeeds.model.NbaFeedModel
 import com.raweng.dfe.models.feed.DFEFeedModel
 
-class DFENBAFeedMapper(private val dfeFeedModel: DFEFeedModel) {
+class DFENBAFeedMapper(private val feedPosition: Int, private val dfeFeedModel: DFEFeedModel) {
 
     fun getNbaFeedModel(): NbaFeedModel {
         return NbaFeedModel().apply {
             uid = dfeFeedModel.uid
+            nid = dfeFeedModel.newsid
             title = dfeFeedModel.title
             media = getMedia()
             publishedDateString = dfeFeedModel.publishedDate
             feedType = dfeFeedModel.feedType
+            position = feedPosition
         }
     }
 

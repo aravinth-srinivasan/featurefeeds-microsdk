@@ -123,7 +123,8 @@ data class FeatureFeedResponse(
                 @SerializedName("published_date")
                 var publishedDate: String? = null,
                 @SerializedName("title")
-                var title: String? = null
+                var title: String? = null,
+                var position: Int = -1,
             ) {
 
                 data class GalleryImage(
@@ -149,6 +150,10 @@ data class FeatureFeedResponse(
                     var label: String? = null,
                     @SerializedName("value")
                     var value: String? = null,
+                    @SerializedName("full_width_image")
+                    var fullWidthImage: Image? = null,
+                    @SerializedName("half_width_image")
+                    var halfWidthImage: Image? = null,
                     var nbaFeedModel: NbaFeedModel? = null
                 )
             }
@@ -171,7 +176,8 @@ data class FeatureFeedResponse(
                 @SerializedName("title")
                 var title: String? = null,
                 @SerializedName("video_link")
-                var videoLink: String? = null
+                var videoLink: String? = null,
+                var position: Int = -1,
             )
 
             data class WebUrl(
@@ -192,7 +198,8 @@ data class FeatureFeedResponse(
                 @SerializedName("published_date")
                 var publishedDate: String? = null,
                 @SerializedName("title")
-                var title: String? = null
+                var title: String? = null,
+                var position: Int = -1,
             )
 
 
@@ -220,7 +227,8 @@ data class FeatureFeedResponse(
                 @SerializedName("subtitle")
                 var subtitle: String?,
                 @SerializedName("title")
-                var title: String?
+                var title: String?,
+                var position: Int = -1,
             )
 
         }

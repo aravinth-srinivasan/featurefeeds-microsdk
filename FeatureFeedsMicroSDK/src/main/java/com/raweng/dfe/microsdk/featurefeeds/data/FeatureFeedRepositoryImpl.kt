@@ -9,6 +9,7 @@ import com.raweng.dfe.microsdk.featurefeeds.mapper.DFENBAFeedMapper
 import com.raweng.dfe.microsdk.featurefeeds.mapper.FeaturedFeedsMapper
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse
 import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
+import com.raweng.dfe.microsdk.featurefeeds.type.DateFormat
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroError
 import com.raweng.dfe.models.feed.DFEFeedCallback
 import com.raweng.dfe.models.feed.DFEFeedModel
@@ -18,7 +19,13 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse.Entry as LocalResponseEntry
 
-class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepository {
+class FeatureFeedRepositoryImpl(
+    private val appScheme: String?,
+    private val dateFormatType: DateFormat?,
+    private val dateFormat: String,
+    private val stack: Stack
+) :
+    FeatureFeedRepository {
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO + Job())
 
@@ -56,7 +63,6 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
                 }
             }
         }
-
         job.invokeOnCompletion {
             coroutineScope.cancel()
         }
@@ -70,10 +76,15 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
                 val feedTypeList = finalData.feedType ?: emptyList()
                 val modifiedFeedTypeList =
                     feedTypeList.mapIndexed { feedIndex: Int, feedType: FeatureFeedResponse.Entry.FeedType? ->
-                        fetchAndModifiedFeedTypeNBAData(feedType)
+                        fetchAndModifiedFeedTypeNBAData(feedIndex, feedType)
                     }
                 finalData.feedType = modifiedFeedTypeList
-                val mapper = FeaturedFeedsMapper(featuredFeeds = finalData)
+                val mapper = FeaturedFeedsMapper(
+                    appScheme = appScheme,
+                    dateFormat = dateFormat,
+                    dateFormatType = dateFormatType,
+                    featuredFeeds = finalData,
+                )
                 mapper.getFeatureFeeds()
             }.sortedBy { it.order }
         } else {
@@ -82,13 +93,17 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
     }
 
 
-    private suspend fun fetchAndModifiedFeedTypeNBAData(feedType: FeatureFeedResponse.Entry.FeedType?): FeatureFeedResponse.Entry.FeedType? {
+    private suspend fun fetchAndModifiedFeedTypeNBAData(
+        position: Int,
+        feedType: FeatureFeedResponse.Entry.FeedType?
+    ): FeatureFeedResponse.Entry.FeedType? {
         val nid = feedType?.nbaFeeds?.nbaFeeds?.value ?: ""
+        updateFeedPosition(position, feedType)
         return if (nid.isNotEmpty()) {
             try {
                 val dfeFeeds = fetchDFEFeeds(nid).firstOrNull()
                 if (dfeFeeds != null) {
-                    val mapper = DFENBAFeedMapper(dfeFeeds)
+                    val mapper = DFENBAFeedMapper(position, dfeFeeds)
                     feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel = mapper.getNbaFeedModel()
                 }
             } catch (e: Throwable) {
@@ -100,9 +115,20 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
         }
     }
 
+    private fun updateFeedPosition(position: Int, feedType: FeatureFeedResponse.Entry.FeedType?) {
+        when {
+            feedType?.article != null -> feedType.article?.position = position
+            feedType?.video != null -> feedType.video?.position = position
+            feedType?.gallery != null -> feedType.gallery?.position = position
+            feedType?.webUrl != null -> feedType.webUrl?.position = position
+        }
+    }
 
-    private suspend fun fetchCMSFeeds(csContentType: String): Flow<QueryResult?> = flow {
-        val queryResult = suspendCancellableCoroutine<QueryResult?> { continuation ->
+
+    private suspend fun fetchCMSFeeds(
+        csContentType: String
+    ): Flow<QueryResult?> = flow {
+        val queryResult = suspendCancellableCoroutine { continuation ->
             val query: Query = stack.contentType(csContentType).query()
             query.setCachePolicy(CachePolicy.NETWORK_ONLY)
             query.find(object : QueryResultsCallBack() {
@@ -126,7 +152,7 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
     }.flowOn(Dispatchers.IO)
 
     private fun fetchDFEFeeds(nid: String): Flow<DFEFeedModel?> = flow {
-        val dfeFeedModel = suspendCancellableCoroutine<DFEFeedModel?> { continuation ->
+        val dfeFeedModel = suspendCancellableCoroutine { continuation ->
             DFEManager.getInst().queryManager.getFeed(
                 getFields(),
                 nid,

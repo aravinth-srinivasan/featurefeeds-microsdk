@@ -5,11 +5,11 @@ enum class FeedType {
 
     override fun toString(): String {
         return when (this) {
-            ARTICLE -> ARTICLE.name.lowercase()
-            WEB_URL -> WEB_URL.name.lowercase()
-            VIDEO -> VIDEO.name.lowercase()
-            GALLERY -> GALLERY.name.lowercase()
-            NBA_FEEDS -> NBA_FEEDS.name.lowercase()
+            ARTICLE -> ARTICLE.name.uppercase()
+            WEB_URL -> WEB_URL.name.uppercase()
+            VIDEO -> VIDEO.name.uppercase()
+            GALLERY -> GALLERY.name.uppercase()
+            NBA_FEEDS -> NBA_FEEDS.name.uppercase()
         }
     }
 }

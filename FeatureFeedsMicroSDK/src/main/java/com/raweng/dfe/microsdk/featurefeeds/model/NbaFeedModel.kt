@@ -21,7 +21,8 @@ data class NbaFeedModel(
     var category: String? = null,
     @SerializedName("media")
     var media: List<FeedMedia?>? = null,
-    ) {
+    var position: Int = -1,
+) {
     data class FeedMedia(
         @SerializedName("thumbnail")
         var thumbnail: String? = null,
