@@ -1,10 +1,8 @@
-package com.raweng.microsdkapplication
+package com.raweng.microsdkapplication.featurefeed
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.widget.TextView
-import androidx.appcompat.widget.AppCompatButton
+import androidx.appcompat.app.AppCompatActivity
 import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.FeatureFeedsMicroSDK
 import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
@@ -15,10 +13,12 @@ import com.raweng.dfe.models.config.DFEConfigCallback
 import com.raweng.dfe.models.config.DFEConfigModel
 import com.raweng.dfe.modules.policy.ErrorModel
 import com.raweng.dfe.modules.policy.RequestType
+import com.raweng.dfe_components_android.components.featuredfeeds.FeaturedFeedsView
+import com.raweng.dfe_components_android.components.featuredfeeds.model.FeaturedFeedsViewDataModel
+import com.raweng.microsdkapplication.R
 import org.json.JSONObject
 
-class MainActivity : AppCompatActivity() {
-
+class FeaturedFeedActivity : AppCompatActivity() {
     var csApiKey = ""
     var csAccessToken = ""
     var csEnv = ""
@@ -26,11 +26,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_featured_feed)
         fetchConfigAndInitMicroSDK()
-        findViewById<AppCompatButton>(R.id.btnFetch).setOnClickListener {
-            fetchFeatureFeed()
-        }
     }
 
     private fun fetchConfigAndInitMicroSDK() {
@@ -42,7 +39,7 @@ class MainActivity : AppCompatActivity() {
                     if (!apiData.isNullOrEmpty()) {
                         prepareData(apiData)
                         FeatureFeedsMicroSDK.initialize(
-                            this@MainActivity,
+                            this@FeaturedFeedActivity,
                             csHostUrl = csUrl,
                             csApiKey = csApiKey,
                             csAccessToken = csAccessToken,
@@ -51,12 +48,14 @@ class MainActivity : AppCompatActivity() {
                             dateFormatType = DateFormat.HOURS_AGO,
                             dateFormat = "MM/dd/yyyy"
                         )
+                        fetchFeatureFeed()
                     } else {
                         Log.e("TAG", "onCompletion: " + p1.toString())
                     }
                 }
             })
     }
+
 
     private fun prepareData(apiData: MutableList<DFEConfigModel>) {
         val mConfigModel = apiData[0]
@@ -81,58 +80,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun fetchFeatureFeed() {
-        findViewById<TextView>(R.id.textV).text = "Please wait fetching..."
         FeatureFeedsMicroSDK.getInstance()
-            .getFeatureFeed("featured_feeds",object : FeatureFeedResponseListener {
+            .getFeatureFeed("featured_feeds", object : FeatureFeedResponseListener {
                 override fun onSuccess(feeds: List<FeaturedFeedModel>) {
                     Log.e("TAG", "onSuccess: " + feeds.size)
-                    val builder = StringBuilder()
-                    feeds.forEach {
-                        builder.append("Title : ${it.title} - Order: ${it.order}")
-                        builder.append("\n")
-                        builder.append("UpdatedAt : ${it.updatedAt} - Uid: ${it.uid}")
-                        builder.append("\n")
-                        it.feeds?.forEach {
-                            builder.append("\n")
-                            builder.append("\n")
-                            builder.append("Feed Title: ${it.title}")
-                            builder.append("\n")
-                            builder.append("Feed : Date: ${it.date}")
-                            builder.append("\n")
-                            builder.append("Feed : Thumbnail: ${it.thumbnail}")
-                            Log.e("TAG", "onSuccess: "+it.thumbnail, )
-                            builder.append("\n")
-                            builder.append("Feed : Feed Type: ${it.feedType}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Id: ${it.feedId}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Position: ${it.feedPosition}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Label: ${it.label}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Hide Title: ${it.hideTitle}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Hide Date: ${it.hideDate}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Hide Label: ${it.hideLabel}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Hide Data Source: ${it.dataSource}")
-                            builder.append("\n")
-                            builder.append("Feed : Link: ${it.clickthroughLink}")
-                            builder.append("\n")
-                            Log.e("TAG", "onSuccess: ${it.feedType} "+it.date, )
-                            builder.append("\n")
-                            builder.append("\n")
-                        }
-
+                    val mapper = FeaturedFeedDataMapper(feeds)
+                    mapper.getFeaturedFeedList()
+                    findViewById<FeaturedFeedsView>(R.id.featuredFeedView).apply {
+                        configureView(
+                            style = "featuredFeedsViewTheme",
+                            data = FeaturedFeedsViewDataModel(
+                                featuredFeeds = mapper.getFeaturedFeedList()
+                            )
+                        )
                     }
-                    findViewById<TextView>(R.id.textV).text = builder.toString()
                 }
 
                 override fun onError(error: MicroError) {
                     Log.e("TAG", "onError: " + error.errorMsg)
-                    findViewById<TextView>(R.id.textV).text = error.errorMsg
                 }
             })
     }
+
 }

@@ -5,7 +5,6 @@ import android.util.Log
 import com.contentstack.sdk.Config
 import com.contentstack.sdk.Contentstack
 import com.contentstack.sdk.Stack
-import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
 import com.raweng.dfe.microsdk.featurefeeds.manager.LocalApiManager
 import com.raweng.dfe.microsdk.featurefeeds.type.DateFormat
@@ -17,31 +16,46 @@ class FeatureFeedsMicroSDK private constructor() {
     companion object {
         private const val DEFAULT_DATE_FORMAT = "MMMM dd, yyyy"
         private val localInstance: FeatureFeedsMicroSDK by lazy { FeatureFeedsMicroSDK() }
-        private var dateFormat:String = ""
+
+        private var csHostUrl: String? = null
+        private var csApiKey: String? =null
+        private var environment: String? = null
+        private var csAccessToken: String? = null
         private var appScheme: String? = null
+        private var dateFormat:String = ""
         private var dateFormatType: DateFormat? = null
 
+       internal fun getCSHostUrl():String? = csHostUrl
+        internal fun getCSApiKey():String? = csApiKey
+        internal fun getCSEnvironment():String? = environment
+        internal fun getCSAccessToken():String? = csAccessToken
+        internal fun getCSDateFormat():String = dateFormat
+        internal fun getCSDateFormatType():DateFormat? = dateFormatType
+        internal fun getAppScheme():String? = appScheme
         @JvmStatic
         fun getInstance(): FeatureFeedsMicroSDK = localInstance
 
         @JvmStatic
         fun initialize(
             context: Context,
-            csUrl: String?,
+            csHostUrl: String?,
             csApiKey: String?,
+            environment: String?,
             csAccessToken: String?,
-            csEnv: String?,
             appScheme: String?,
             dateFormatType: DateFormat?,
             dateFormat: String? = null
         ) {
-            this.dateFormat = dateFormat.takeUnless { it.isNullOrEmpty() } ?: DEFAULT_DATE_FORMAT
+            this.csHostUrl = csHostUrl
+            this.csApiKey = csApiKey
+            this.environment = environment
+            this.csAccessToken = csAccessToken
             this.appScheme = appScheme
             this.dateFormatType = dateFormatType
+            this.dateFormat = dateFormat.takeUnless { it.isNullOrEmpty() } ?: DEFAULT_DATE_FORMAT
             try {
-                if (isAllFieldsAreNotEmptyOrNull(csUrl, csApiKey, csAccessToken, csEnv)
-                ) {
-                    initContentStack(context, csUrl, csApiKey, csAccessToken, csEnv)
+                if (isAllFieldsAreNotEmptyOrNull()) {
+                    initContentStack(context)
                     setupLocalApiManager()
                 }
             } catch (e: Exception) {
@@ -50,38 +64,26 @@ class FeatureFeedsMicroSDK private constructor() {
             }
         }
 
-        private fun isAllFieldsAreNotEmptyOrNull(
-            csUrl: String?,
-            csApiKey: String?,
-            csAccessToken: String?,
-            csEnv: String?
-        ): Boolean {
-            return listOf(csUrl, csApiKey, csAccessToken, csEnv).all { !it.isNullOrEmpty() }
+        private fun isAllFieldsAreNotEmptyOrNull(): Boolean {
+            return listOf(csHostUrl, csApiKey, csAccessToken, environment).all { !it.isNullOrEmpty() }
         }
 
-        private fun initContentStack(
-            context: Context,
-            csUrl: String?,
-            csApiKey: String?,
-            csAccessToken: String?,
-            csEnv: String?
-        ) {
+        private fun initContentStack(context: Context) {
             localInstance.stack = Contentstack.stack(
                 context,
                 csApiKey.orEmpty(),
                 csAccessToken.orEmpty(),
-                csEnv.orEmpty(),
+                environment.orEmpty(),
                 Config().apply {
-                    host = csUrl
+                    host = csHostUrl
                 }
             )
-            //DFEManager.init(context)
         }
 
         private fun setupLocalApiManager() {
             localInstance.stack?.run {
                 localInstance.localApiManager =
-                    LocalApiManager(appScheme, dateFormatType, dateFormat, this)
+                    LocalApiManager(this)
             } ?: Log.e("TAG", "please init content stack")
         }
     }

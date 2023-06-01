@@ -1,5 +1,6 @@
 package com.raweng.dfe.microsdk.featurefeeds.mapper
 
+import com.raweng.dfe.microsdk.featurefeeds.FeatureFeedsMicroSDK
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse
 import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
 import com.raweng.dfe.microsdk.featurefeeds.type.DateFormat
@@ -7,12 +8,12 @@ import com.raweng.dfe.microsdk.featurefeeds.type.FeedType
 import com.raweng.dfe.microsdk.featurefeeds.type.SourceType
 import com.raweng.dfe.microsdk.featurefeeds.utils.Utils
 
-class FeaturedFeedsMapper(
-    private val appScheme: String?,
-    private val dateFormatType: DateFormat?,
-    private val dateFormat: String,
-    private val featuredFeeds: FeatureFeedResponse.Entry
-) {
+class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) {
+
+    private companion object {
+        private const val CONTENT_STACK_URL = "https://images.contentstack.io"
+        private const val IMAGE_FORMAT = "format=pjpg&auto=webp"
+    }
 
     fun getFeatureFeeds(): FeaturedFeedModel {
         return FeaturedFeedModel().apply {
@@ -30,7 +31,8 @@ class FeaturedFeedsMapper(
                 title = getTitle(it),
                 date = getDate(it),
                 thumbnail = getThumbnail(featuredFeeds.feedType?.size, it),
-                feedType = getFeedType(it),
+                feedType = getFeedType(it)?.lowercase(),
+                label = getFeedType(it),
                 feedId = getFeedId(it),
                 feedPosition = getFeedPosition(it),
                 hideDate = getHideDate(it),
@@ -51,8 +53,18 @@ class FeaturedFeedsMapper(
             feedType?.video != null -> FeedType.VIDEO.toString()
             feedType?.webUrl != null -> FeedType.WEB_URL.toString()
             feedType?.gallery != null -> FeedType.GALLERY.toString()
-            feedType?.nbaFeeds != null -> FeedType.NBA_FEEDS.toString()
+            feedType?.nbaFeeds != null -> getDFEFeedType(feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.feedType)
             else -> null
+        }
+    }
+
+    private fun getDFEFeedType(feedType: String?): String {
+        return when (feedType?.uppercase()) {
+            FeedType.ARTICLE.toString() -> FeedType.ARTICLE.toString()
+            FeedType.VIDEO.toString() -> FeedType.VIDEO.toString()
+            FeedType.WEB_URL.toString() -> FeedType.WEB_URL.toString()
+            FeedType.GALLERY.toString() -> FeedType.GALLERY.toString()
+            else -> ""
         }
     }
 
@@ -84,10 +96,11 @@ class FeaturedFeedsMapper(
             } else {
                 Utils.parseDate(publishedDate)
             }
-            if (dateFormatType == DateFormat.HOURS_AGO) {
-                return date?.let { Utils.timeAgoSinceAccessibility(it,dateFormat) }
+            val dataFormat = FeatureFeedsMicroSDK.getCSDateFormat()
+            return if (FeatureFeedsMicroSDK.getCSDateFormatType() == DateFormat.HOURS_AGO) {
+                date?.let { Utils.timeAgoSinceAccessibility(it, dataFormat) }
             } else {
-                return date?.let { Utils.formatDateToString(it,dateFormat) }
+                date?.let { Utils.formatDateToString(it, dataFormat) }
             }
         }
         return null
@@ -98,7 +111,7 @@ class FeaturedFeedsMapper(
         feedType: FeatureFeedResponse.Entry.FeedType?
     ): String? {
         val totalSizeData = totalSize ?: 0
-        return when {
+        val url = when {
             feedType?.article != null -> if (totalSizeData >= 1) (feedType.article?.halfWidthImage?.url) else (feedType.article?.fullWidthImage?.url)
             feedType?.video != null -> if (totalSizeData >= 1) (feedType.video?.halfWidthImage?.url) else (feedType.video?.fullWidthImage?.url)
             feedType?.webUrl != null -> if (totalSizeData >= 1) (feedType.webUrl?.halfWidthImage?.url) else (feedType.webUrl?.fullWidthImage?.url)
@@ -106,6 +119,15 @@ class FeaturedFeedsMapper(
             feedType?.nbaFeeds != null -> getDFEThumbnail(totalSizeData, feedType)
             else -> null
         }
+
+        val finalUrl = url?.let { thumbnail ->
+            if (thumbnail.startsWith(CONTENT_STACK_URL)) {
+                "$thumbnail?${IMAGE_FORMAT}"
+            } else {
+                thumbnail
+            }
+        }
+        return finalUrl
     }
 
 
@@ -163,7 +185,7 @@ class FeaturedFeedsMapper(
 
 
     private fun getGenerateClickThroughLink(feedType: FeaturedFeedModel.FeedModel): String {
-        return "$appScheme://screen/feed_detail/${feedType.feedType?.lowercase() ?: ""}?position=${feedType.feedPosition ?: 0}&source=${feedType.dataSource?.lowercase() ?: ""}&feed_id=${feedType.feedId ?: ""}"
+        return "${FeatureFeedsMicroSDK.getAppScheme()}://screen/feed_detail/${feedType.feedType?.lowercase() ?: ""}?position=${feedType.feedPosition ?: 0}&source=${feedType.dataSource?.lowercase() ?: ""}&feed_id=${feedType.feedId ?: ""}"
     }
 
     private fun getFeedId(feedType: FeatureFeedResponse.Entry.FeedType?): String? {

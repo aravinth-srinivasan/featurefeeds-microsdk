@@ -4,13 +4,14 @@ import android.annotation.SuppressLint
 import com.contentstack.sdk.*
 import com.google.gson.Gson
 import com.raweng.dfe.DFEManager
+import com.raweng.dfe.microsdk.featurefeeds.FeatureFeedsMicroSDK
 import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
 import com.raweng.dfe.microsdk.featurefeeds.mapper.DFENBAFeedMapper
 import com.raweng.dfe.microsdk.featurefeeds.mapper.FeaturedFeedsMapper
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse
 import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
-import com.raweng.dfe.microsdk.featurefeeds.type.DateFormat
 import com.raweng.dfe.microsdk.featurefeeds.utils.MicroError
+import com.raweng.dfe.microsdk.featurefeeds.utils.Utils
 import com.raweng.dfe.models.feed.DFEFeedCallback
 import com.raweng.dfe.models.feed.DFEFeedModel
 import com.raweng.dfe.modules.policy.ErrorModel
@@ -19,13 +20,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse.Entry as LocalResponseEntry
 
-class FeatureFeedRepositoryImpl(
-    private val appScheme: String?,
-    private val dateFormatType: DateFormat?,
-    private val dateFormat: String,
-    private val stack: Stack
-) :
-    FeatureFeedRepository {
+class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepository {
+
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO + Job())
 
@@ -70,7 +66,7 @@ class FeatureFeedRepositoryImpl(
 
     private suspend fun getFeatureFeedResponseList(queryResult: QueryResult?): List<FeaturedFeedModel> {
         return if (queryResult != null && !queryResult.resultObjects.isNullOrEmpty()) {
-            queryResult.resultObjects.mapIndexed { index, entry ->
+           val modifiedList = queryResult.resultObjects.mapIndexed { _, entry ->
                 val resultJson = entry?.toJSON().toString()
                 val finalData = Gson().fromJson(resultJson, LocalResponseEntry::class.java)
                 val feedTypeList = finalData.feedType ?: emptyList()
@@ -79,14 +75,17 @@ class FeatureFeedRepositoryImpl(
                         fetchAndModifiedFeedTypeNBAData(feedIndex, feedType)
                     }
                 finalData.feedType = modifiedFeedTypeList
-                val mapper = FeaturedFeedsMapper(
-                    appScheme = appScheme,
-                    dateFormat = dateFormat,
-                    dateFormatType = dateFormatType,
-                    featuredFeeds = finalData,
-                )
+                val mapper = FeaturedFeedsMapper(featuredFeeds = finalData)
                 mapper.getFeatureFeeds()
-            }.sortedBy { it.order }
+            }
+            val sortedList = modifiedList.sortedWith(compareBy { item ->
+                if (item.order != null) {
+                    item.order
+                } else {
+                    item.updatedAt?.let { Utils.parseDate(it) }
+                }
+            })
+            sortedList
         } else {
             emptyList()
         }
