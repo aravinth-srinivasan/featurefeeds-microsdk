@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import com.contentstack.sdk.*
 import com.google.gson.Gson
 import com.raweng.dfe.DFEManager
-import com.raweng.dfe.microsdk.featurefeeds.FeatureFeedsMicroSDK
 import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
 import com.raweng.dfe.microsdk.featurefeeds.mapper.DFENBAFeedMapper
 import com.raweng.dfe.microsdk.featurefeeds.mapper.FeaturedFeedsMapper
@@ -22,7 +21,7 @@ import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse.Entry as L
 
 class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepository {
 
-
+    private var feedList = listOf<FeaturedFeedModel>()
     private val coroutineScope = CoroutineScope(Dispatchers.IO + Job())
 
     override fun getFeatureFeeds(
@@ -30,6 +29,10 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
         responseListener: FeatureFeedResponseListener
     ) {
         fetchAndGenerateList(csContentType, responseListener)
+    }
+
+    override fun getFeaturedFeedsModel(uid: String?): FeaturedFeedModel? {
+        return feedList.firstOrNull { (it.uid == uid) }
     }
 
 
@@ -50,6 +53,7 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
                 if (!isError) {
                     val generatedList = getFeatureFeedResponseList(response)
                     withContext(Dispatchers.Main) {
+                        feedList = generatedList
                         responseListener.onSuccess(generatedList)
                     }
                 }
@@ -66,7 +70,7 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
 
     private suspend fun getFeatureFeedResponseList(queryResult: QueryResult?): List<FeaturedFeedModel> {
         return if (queryResult != null && !queryResult.resultObjects.isNullOrEmpty()) {
-           val modifiedList = queryResult.resultObjects.mapIndexed { _, entry ->
+            val modifiedList = queryResult.resultObjects.mapIndexed { _, entry ->
                 val resultJson = entry?.toJSON().toString()
                 val finalData = Gson().fromJson(resultJson, LocalResponseEntry::class.java)
                 val feedTypeList = finalData.feedType ?: emptyList()
@@ -176,7 +180,10 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
     }.flowOn(Dispatchers.IO)
 
     private fun getFields(): String {
-        return "uid,nid,title,published_date,feed_type,category,media{thumbnail}"
+        return "uid,nid,title,published_date,feed_type,category," +
+                "media{thumbnail,source,caption, type}," +
+                "content,additional_content,web_url," +
+                "author { name organization author_photo is_nba_staff description featured_author }"
     }
 
 }

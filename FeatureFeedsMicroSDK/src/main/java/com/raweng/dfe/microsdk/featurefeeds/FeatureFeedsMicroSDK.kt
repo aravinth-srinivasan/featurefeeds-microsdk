@@ -7,6 +7,7 @@ import com.contentstack.sdk.Contentstack
 import com.contentstack.sdk.Stack
 import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
 import com.raweng.dfe.microsdk.featurefeeds.manager.LocalApiManager
+import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
 import com.raweng.dfe.microsdk.featurefeeds.type.DateFormat
 
 class FeatureFeedsMicroSDK private constructor() {
@@ -18,20 +19,24 @@ class FeatureFeedsMicroSDK private constructor() {
         private val localInstance: FeatureFeedsMicroSDK by lazy { FeatureFeedsMicroSDK() }
 
         private var csHostUrl: String? = null
-        private var csApiKey: String? =null
+        private var csApiKey: String? = null
         private var environment: String? = null
         private var csAccessToken: String? = null
         private var appScheme: String? = null
-        private var dateFormat:String = ""
+        private var dateFormat: String = ""
         private var dateFormatType: DateFormat? = null
+        private var imageFormat: String? = null
 
-       internal fun getCSHostUrl():String? = csHostUrl
-        internal fun getCSApiKey():String? = csApiKey
-        internal fun getCSEnvironment():String? = environment
-        internal fun getCSAccessToken():String? = csAccessToken
-        internal fun getCSDateFormat():String = dateFormat
-        internal fun getCSDateFormatType():DateFormat? = dateFormatType
-        internal fun getAppScheme():String? = appScheme
+        internal fun getCSHostUrl(): String? = csHostUrl
+        internal fun getCSApiKey(): String? = csApiKey
+        internal fun getCSEnvironment(): String? = environment
+        internal fun getCSAccessToken(): String? = csAccessToken
+        internal fun getCSDateFormat(): String = dateFormat
+        internal fun getCSDateFormatType(): DateFormat? = dateFormatType
+        internal fun getAppScheme(): String? = appScheme
+
+        internal fun getImageFormat(): String? = imageFormat
+
         @JvmStatic
         fun getInstance(): FeatureFeedsMicroSDK = localInstance
 
@@ -44,7 +49,8 @@ class FeatureFeedsMicroSDK private constructor() {
             csAccessToken: String?,
             appScheme: String?,
             dateFormatType: DateFormat?,
-            dateFormat: String? = null
+            dateFormat: String? = null,
+            imageFormat: String? = null
         ) {
             this.csHostUrl = csHostUrl
             this.csApiKey = csApiKey
@@ -53,6 +59,7 @@ class FeatureFeedsMicroSDK private constructor() {
             this.appScheme = appScheme
             this.dateFormatType = dateFormatType
             this.dateFormat = dateFormat.takeUnless { it.isNullOrEmpty() } ?: DEFAULT_DATE_FORMAT
+            this.imageFormat = imageFormat
             try {
                 if (isAllFieldsAreNotEmptyOrNull()) {
                     initContentStack(context)
@@ -65,7 +72,12 @@ class FeatureFeedsMicroSDK private constructor() {
         }
 
         private fun isAllFieldsAreNotEmptyOrNull(): Boolean {
-            return listOf(csHostUrl, csApiKey, csAccessToken, environment).all { !it.isNullOrEmpty() }
+            return listOf(
+                csHostUrl,
+                csApiKey,
+                csAccessToken,
+                environment
+            ).all { !it.isNullOrEmpty() }
         }
 
         private fun initContentStack(context: Context) {
@@ -94,4 +106,9 @@ class FeatureFeedsMicroSDK private constructor() {
     ) {
         localApiManager?.fetchFeatureFeed(csContentType, responseListener)
     }
+
+    fun getFeaturedFeedsModel(uid: String?): FeaturedFeedModel? {
+        return localApiManager?.getFeaturedFeedsModel(uid)
+    }
+
 }

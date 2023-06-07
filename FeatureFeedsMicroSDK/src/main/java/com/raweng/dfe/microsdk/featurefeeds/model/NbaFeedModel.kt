@@ -5,11 +5,8 @@ import java.util.Date
 
 data class NbaFeedModel(
 
-    @SerializedName("uid")
     var uid: String? = null,
-    @SerializedName("nid")
     var nid: String? = null,
-    @SerializedName("title")
     var title: String? = null,
     @SerializedName("published_date")
     var publishedDateString: String? = null,
@@ -17,14 +14,34 @@ data class NbaFeedModel(
     var publishedDate: Date? = null,
     @SerializedName("feed_type")
     var feedType: String? = null,
-    @SerializedName("category")
     var category: String? = null,
-    @SerializedName("media")
     var media: List<FeedMedia?>? = null,
+    var content: String? = null,
+    @SerializedName("additional_content")
+    var additionalContent: String? = null,
+    @SerializedName("web_url")
+    var webUrl: String? = null,
+    var video: List<Video?>? = null,
     var position: Int = -1,
+    var author: AuthorModel? = null
 ) {
     data class FeedMedia(
-        @SerializedName("thumbnail")
         var thumbnail: String? = null,
+        var source: String? = null,
+        var caption: String? = null,
+        var type: String? = null,
+        var title: String? = null
     )
+
+    data class Video(var url: String? = null)
+
 }
+
+data class AuthorModel(
+    var authorName: String? = null,
+    var organization: String? = null,
+    var authorImage: String? = null,
+    var isNbaStaff: Boolean? = null,
+    var description: String? = null,
+    var isFeaturedAuthor: Boolean? = null
+)

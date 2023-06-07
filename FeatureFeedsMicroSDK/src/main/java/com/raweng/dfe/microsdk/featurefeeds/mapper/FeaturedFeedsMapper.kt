@@ -3,6 +3,7 @@ package com.raweng.dfe.microsdk.featurefeeds.mapper
 import com.raweng.dfe.microsdk.featurefeeds.FeatureFeedsMicroSDK
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse
 import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
+import com.raweng.dfe.microsdk.featurefeeds.model.ImageModel
 import com.raweng.dfe.microsdk.featurefeeds.type.DateFormat
 import com.raweng.dfe.microsdk.featurefeeds.type.FeedType
 import com.raweng.dfe.microsdk.featurefeeds.type.SourceType
@@ -12,7 +13,6 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
 
     private companion object {
         private const val CONTENT_STACK_URL = "https://images.contentstack.io"
-        private const val IMAGE_FORMAT = "format=pjpg&auto=webp"
     }
 
     fun getFeatureFeeds(): FeaturedFeedModel {
@@ -21,11 +21,11 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
             updatedAt = featuredFeeds.updatedAt
             uid = featuredFeeds.uid
             order = featuredFeeds.order
-            feeds = getFeedList()
+            feeds = getFeedList(this)
         }
     }
 
-    private fun getFeedList(): List<FeaturedFeedModel.FeedModel> {
+    private fun getFeedList(mFeatureFeedModel: FeaturedFeedModel): List<FeaturedFeedModel.FeedModel> {
         return featuredFeeds.feedType?.map {
             FeaturedFeedModel.FeedModel(
                 title = getTitle(it),
@@ -40,10 +40,98 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
                 hideLabel = getHideLabel(it),
                 clickthroughLink = "",
                 dataSource = getSource(it),
+                content = getContent(it),
+                additionalContent = getAdditionalContent(it),
+                galleryImages = getGalleryImages(it),
+                link = getLink(it),
+                spotlightImage = getSpotlightImage(it),
+                author = it?.nbaFeeds?.nbaFeeds?.nbaFeedModel?.author
+
             ).apply {
-                clickthroughLink = getGenerateClickThroughLink(this)
+                clickthroughLink = getGenerateClickThroughLink(mFeatureFeedModel, this)
             }
         } ?: arrayListOf()
+    }
+
+    private fun getSpotlightImage(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
+        val url = when {
+            feedType?.article != null -> feedType.article?.spotlightImage?.url.orEmpty()
+            feedType?.video != null -> ""
+            feedType?.webUrl != null -> ""
+            feedType?.gallery != null -> ""
+            feedType?.nbaFeeds != null -> ""
+            else -> null
+        }
+
+        return generateCMSImageUrl(url)
+    }
+
+    private fun getLink(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
+        return if (!feedType?.article?.link.isNullOrEmpty()) {
+            feedType?.article?.link.orEmpty()
+        } else if (!feedType?.gallery?.link.isNullOrEmpty()) {
+            feedType?.gallery?.link.orEmpty()
+        } else if (!feedType?.webUrl?.link.isNullOrEmpty()) {
+            feedType?.webUrl?.link.orEmpty()
+        } else {
+            getVideoLink(feedType)
+        }
+    }
+
+    private fun getVideoLink(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
+        return if (!feedType?.video?.videoLink.isNullOrEmpty()) {
+            feedType?.video?.videoLink.orEmpty()
+        } else if (!feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel?.video.isNullOrEmpty()) {
+            feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel?.video?.getOrNull(0)?.url
+        } else {
+            ""
+        }
+    }
+
+    private fun getGalleryImages(feedType: FeatureFeedResponse.Entry.FeedType?): List<ImageModel>? {
+        return if (feedType?.gallery != null) {
+            feedType.gallery?.images?.map {
+                ImageModel(
+                    url = generateCMSImageUrl(it?.image?.url.orEmpty()),
+                    imageTitle = it?.image?.title.orEmpty(),
+                    imageType = it?.image?.contentType.orEmpty(),
+                    caption = it?.caption.orEmpty()
+                )
+            }
+        } else if (feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel?.media != null) {
+            feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.media?.map {
+                ImageModel(
+                    url = generateCMSImageUrl(it?.source.orEmpty()),
+                    caption = it?.caption.orEmpty(),
+                    imageTitle = it?.title.orEmpty(),
+                    imageType = it?.type.orEmpty()
+                )
+            }
+        } else {
+            listOf()
+        }
+    }
+
+    private fun getContent(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
+        return when {
+            feedType?.article != null -> feedType.article?.content.orEmpty()
+            feedType?.video != null -> feedType.video?.content.orEmpty()
+            feedType?.webUrl != null -> feedType.webUrl?.content.orEmpty()
+            feedType?.gallery != null -> feedType.gallery?.content.orEmpty()
+            feedType?.nbaFeeds != null -> feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.content.orEmpty()
+            else -> null
+        }
+    }
+
+    private fun getAdditionalContent(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
+        return when {
+            feedType?.article != null -> feedType.article?.additionalContent.orEmpty()
+            feedType?.video != null -> feedType.video?.additionalContent.orEmpty()
+            feedType?.webUrl != null -> feedType.webUrl?.additionalContent.orEmpty()
+            feedType?.gallery != null -> feedType.gallery?.additionalContent.orEmpty()
+            feedType?.nbaFeeds != null -> feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.additionalContent.orEmpty()
+            else -> null
+        }
     }
 
 
@@ -112,22 +200,14 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
     ): String? {
         val totalSizeData = totalSize ?: 0
         val url = when {
-            feedType?.article != null -> if (totalSizeData >= 1) (feedType.article?.halfWidthImage?.url) else (feedType.article?.fullWidthImage?.url)
-            feedType?.video != null -> if (totalSizeData >= 1) (feedType.video?.halfWidthImage?.url) else (feedType.video?.fullWidthImage?.url)
-            feedType?.webUrl != null -> if (totalSizeData >= 1) (feedType.webUrl?.halfWidthImage?.url) else (feedType.webUrl?.fullWidthImage?.url)
-            feedType?.gallery != null -> if (totalSizeData >= 1) (feedType.gallery?.halfWidthImage?.url) else (feedType.gallery?.fullWidthImage?.url)
+            feedType?.article != null -> if (totalSizeData > 1) (feedType.article?.halfWidthImage?.url) else (feedType.article?.fullWidthImage?.url)
+            feedType?.video != null -> if (totalSizeData > 1) (feedType.video?.halfWidthImage?.url) else (feedType.video?.fullWidthImage?.url)
+            feedType?.webUrl != null -> if (totalSizeData > 1) (feedType.webUrl?.halfWidthImage?.url) else (feedType.webUrl?.fullWidthImage?.url)
+            feedType?.gallery != null -> if (totalSizeData > 1) (feedType.gallery?.halfWidthImage?.url) else (feedType.gallery?.fullWidthImage?.url)
             feedType?.nbaFeeds != null -> getDFEThumbnail(totalSizeData, feedType)
             else -> null
         }
-
-        val finalUrl = url?.let { thumbnail ->
-            if (thumbnail.startsWith(CONTENT_STACK_URL)) {
-                "$thumbnail?${IMAGE_FORMAT}"
-            } else {
-                thumbnail
-            }
-        }
-        return finalUrl
+        return generateCMSImageUrl(url)
     }
 
 
@@ -135,7 +215,7 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
         totalSize: Int,
         feedType: FeatureFeedResponse.Entry.FeedType?
     ): String {
-        return if (totalSize >= 1) {
+        return if (totalSize > 1) {
             feedType?.nbaFeeds?.nbaFeeds?.halfWidthImage?.url
                 ?: feedType?.nbaFeeds?.nbaFeeds?.fullWidthImage?.url
                 ?: feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel?.media?.getOrNull(0)?.thumbnail
@@ -184,8 +264,24 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
     }
 
 
-    private fun getGenerateClickThroughLink(feedType: FeaturedFeedModel.FeedModel): String {
-        return "${FeatureFeedsMicroSDK.getAppScheme()}://screen/feed_detail/${feedType.feedType?.lowercase() ?: ""}?position=${feedType.feedPosition ?: 0}&source=${feedType.dataSource?.lowercase() ?: ""}&feed_id=${feedType.feedId ?: ""}"
+    private fun getGenerateClickThroughLink(
+        mFeatureFeedModel: FeaturedFeedModel,
+        feedType: FeaturedFeedModel.FeedModel
+    ): String {
+        val builder = StringBuilder()
+        builder.append(FeatureFeedsMicroSDK.getAppScheme())
+        builder.append("://screen/feed_detail/")
+        builder.append(feedType.feedType?.lowercase() ?: "")
+        builder.append("?position=")
+        builder.append(feedType.feedPosition ?: 0)
+        builder.append("&source=")
+        builder.append(feedType.dataSource?.lowercase() ?: "")
+        builder.append("&feed_id=")
+        builder.append(feedType.feedId ?: "")
+        builder.append("&uid=")
+        builder.append(mFeatureFeedModel.uid)
+        //return "${FeatureFeedsMicroSDK.getAppScheme()}://screen/feed_detail/${feedType.feedType?.lowercase() ?: ""}?position=${feedType.feedPosition ?: 0}&source=${feedType.dataSource?.lowercase() ?: ""}&feed_id=${feedType.feedId ?: ""}&uid=${mFeatureFeedModel.uid}"
+        return builder.toString()
     }
 
     private fun getFeedId(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
@@ -216,6 +312,15 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
             SourceType.DFE.toString()
         } else {
             SourceType.CONTENTSTACK.toString()
+        }
+    }
+
+    private fun generateCMSImageUrl(url: String?): String? {
+        val imgFormat = FeatureFeedsMicroSDK.getImageFormat()
+        return if ((url?.startsWith(CONTENT_STACK_URL) == true) && (!imgFormat.isNullOrEmpty())) {
+            "$url?$imgFormat"
+        } else {
+            url
         }
     }
 }

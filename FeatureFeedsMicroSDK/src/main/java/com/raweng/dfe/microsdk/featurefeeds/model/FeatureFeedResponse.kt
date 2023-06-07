@@ -1,4 +1,5 @@
 package com.raweng.dfe.microsdk.featurefeeds.model
+
 import com.google.gson.annotations.SerializedName
 
 
@@ -106,6 +107,8 @@ data class FeatureFeedResponse(
             var webUrl: WebUrl? = null
         ) {
             data class Gallery(
+                @SerializedName("link")
+                var link: String? = null,
                 @SerializedName("full_width_image")
                 var fullWidthImage: Image? = null,
                 @SerializedName("half_width_image")
@@ -124,6 +127,10 @@ data class FeatureFeedResponse(
                 var publishedDate: String? = null,
                 @SerializedName("title")
                 var title: String? = null,
+                @SerializedName("additional_content")
+                var additionalContent: String? = null,
+                @SerializedName("content")
+                var content: String? = null,
                 var position: Int = -1,
             ) {
 
@@ -177,6 +184,10 @@ data class FeatureFeedResponse(
                 var title: String? = null,
                 @SerializedName("video_link")
                 var videoLink: String? = null,
+                @SerializedName("additional_content")
+                var additionalContent: String? = null,
+                @SerializedName("content")
+                var content: String? = null,
                 var position: Int = -1,
             )
 
@@ -199,38 +210,43 @@ data class FeatureFeedResponse(
                 var publishedDate: String? = null,
                 @SerializedName("title")
                 var title: String? = null,
+                @SerializedName("additional_content")
+                var additionalContent: String? = null,
+                @SerializedName("content")
+                var content: String? = null,
                 var position: Int = -1,
             )
 
 
             data class Article(
+                @SerializedName("link")
+                var link: String? = null,
                 @SerializedName("additional_content")
-                var additionalContent: String?,
+                var additionalContent: String? = null,
                 @SerializedName("content")
-                var content: String?,
+                var content: String? = null,
                 @SerializedName("full_width_image")
-                var fullWidthImage: Image?,
+                var fullWidthImage: Image? = null,
                 @SerializedName("half_width_image")
-                var halfWidthImage: Image?,
+                var halfWidthImage: Image? = null,
                 @SerializedName("hide_date")
-                var hideDate: Boolean?,
+                var hideDate: Boolean? = null,
                 @SerializedName("hide_label")
-                var hideLabel: Boolean?,
+                var hideLabel: Boolean? = null,
                 @SerializedName("hide_title")
-                var hideTitle: Boolean?,
+                var hideTitle: Boolean? = null,
                 @SerializedName("_metadata")
-                var metadata: Metadata?,
+                var metadata: Metadata? = null,
                 @SerializedName("published_date")
-                var publishedDate: String?,
+                var publishedDate: String? = null,
                 @SerializedName("spotlight_image")
-                var spotlightImage: Any?,
+                var spotlightImage: Image? = null,
                 @SerializedName("subtitle")
-                var subtitle: String?,
+                var subtitle: String? = null,
                 @SerializedName("title")
-                var title: String?,
+                var title: String? = null,
                 var position: Int = -1,
             )
-
         }
     }
 }
