@@ -21,12 +21,12 @@ class DFENBAFeedMapper(private val feedPosition: Int, private val dfeFeedModel: 
             webUrl = dfeFeedModel.webUrl
             author = dfeFeedModel.`realmGet$author`().let {
                 AuthorModel().apply {
-                    authorName = it.name
                     authorImage = it.authorPhoto
                     organization = it.organization
                     isNbaStaff = it.isIsNbaStaff
                     description = it.description
                     isFeaturedAuthor = it.isFeaturedAuthor
+                    authorName = it.name.orEmpty()
                 }
             }
         }

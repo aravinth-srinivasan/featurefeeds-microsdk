@@ -6,15 +6,22 @@ import java.util.concurrent.TimeUnit
 
 object Utils {
 
+    private const val CMS_DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+
     fun parseDate(dateString: String): Date? {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+        val dateFormat = SimpleDateFormat(CMS_DEFAULT_DATE_FORMAT, Locale.getDefault())
         return dateFormat.parse(dateString)
     }
 
-    fun parseDateFormat(dateString: String?, format: String): Date? {
-        val dateFormat = SimpleDateFormat(format, Locale.getDefault())
-        return dateString?.let { dateFormat.parse(it) }
+    fun parseDateFormat(dateString: String?, outputFormat: String): String? {
+        val inputDateFormat = SimpleDateFormat(CMS_DEFAULT_DATE_FORMAT, Locale.getDefault())
+        val outputDateFormat = SimpleDateFormat(outputFormat, Locale.getDefault())
+        return dateString?.let {dateS ->
+            val parsedDate = inputDateFormat.parse(dateS)
+            parsedDate?.let { outputDateFormat.format(it) }
+        }
     }
+
 
     fun convertTimestampToDate(timestamp: Long): Date {
         return Date(timestamp)

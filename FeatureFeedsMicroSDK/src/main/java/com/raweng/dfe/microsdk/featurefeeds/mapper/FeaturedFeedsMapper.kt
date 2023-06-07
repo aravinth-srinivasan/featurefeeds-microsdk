@@ -18,10 +18,27 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
     fun getFeatureFeeds(): FeaturedFeedModel {
         return FeaturedFeedModel().apply {
             title = featuredFeeds.title
-            updatedAt = featuredFeeds.updatedAt
+            isoDate = featuredFeeds.updatedAt
+            updatedAt = getUpdatedAtDate()
             uid = featuredFeeds.uid
             order = featuredFeeds.order
             feeds = getFeedList(this)
+        }
+    }
+
+    private fun getUpdatedAtDate(): String? {
+        return try {
+            val date = Utils.parseDate(featuredFeeds.updatedAt.orEmpty())
+            date?.let {
+                val dataFormat = FeatureFeedsMicroSDK.getCSDateFormat()
+                if (FeatureFeedsMicroSDK.getCSDateFormatType() == DateFormat.HOURS_AGO) {
+                    Utils.timeAgoSinceAccessibility(it, dataFormat)
+                } else {
+                    Utils.formatDateToString(it, dataFormat)
+                }
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 

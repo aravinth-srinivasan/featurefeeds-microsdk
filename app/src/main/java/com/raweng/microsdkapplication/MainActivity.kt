@@ -1,9 +1,9 @@
 package com.raweng.microsdkapplication
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import com.google.gson.Gson
 import com.raweng.dfe.DFEManager
@@ -17,6 +17,8 @@ import com.raweng.dfe.models.config.DFEConfigModel
 import com.raweng.dfe.modules.policy.ErrorModel
 import com.raweng.dfe.modules.policy.RequestType
 import org.json.JSONObject
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 class MainActivity : AppCompatActivity() {
 
@@ -55,17 +57,20 @@ class MainActivity : AppCompatActivity() {
                             environment = csEnv,
                             appScheme = "bulls",
                             dateFormatType = DateFormat.HOURS_AGO,
-                            imageFormat = "format=pjpg&auto=webp"
+                            imageFormat = "format=pjpg&auto=webp",
+                            dateFormat = "dd/MM/yyyy hh:mm a"
                         )
                     } else {
                         Log.e("TAG", "onCompletion: " + p1.toString())
                     }
 
-                    Log.e("TAG", "onCompletion: csUrl: $csUrl" +
-                            " csApiKey: $csApiKey" +
-                        " csAccessToken: $csAccessToken" +
-                            "csEnv: $csEnv"
-                        , )
+                    Log.e(
+                        "TAG",
+                        "onCompletion: csUrl: $csUrl" +
+                                " csApiKey: $csApiKey" +
+                                " csAccessToken: $csAccessToken" +
+                                "csEnv: $csEnv",
+                    )
                 }
             })
 
@@ -101,11 +106,10 @@ class MainActivity : AppCompatActivity() {
                     Log.e("TAG", "onSuccess: " + feeds.size)
                     val gson  = Gson()
                     val finalOutput = gson.toJson(feeds)
-                    Log.e("TAG", "onSuccess: $finalOutput", )
+                    Log.e("TAG", "onSuccess: $finalOutput")
                     featureFeeds = feeds
                     feeds.forEach {
                         onPrepareBuilder(it)
-
                     }
                     findViewById<TextView>(R.id.textV).text = builder.toString()
                 }
@@ -132,10 +136,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onPrepareBuilder(it:FeaturedFeedModel){
-        builder.append("Title : ${it.title} - Order: ${it.order}")
+        builder.append("Title : ${it.title}")
         builder.append("\n")
-        builder.append("UpdatedAt : ${it.updatedAt} - Uid: ${it.uid}")
+        builder.append("Order: ${it.order}")
         builder.append("\n")
+        builder.append("UpdatedAt : ${it.updatedAt}")
+        builder.append("\n")
+        builder.append("Uid: ${it.uid}")
+        builder.append("\n")
+        //onPrepareFeedItem(it)
+    }
+
+    private fun onPrepareFeedItem(it:FeaturedFeedModel){
         it.feeds?.forEach {
             builder.append("\n")
             builder.append("\n")
@@ -144,7 +156,7 @@ class MainActivity : AppCompatActivity() {
             builder.append("Feed : Date: ${it.date}")
             builder.append("\n")
             builder.append("Feed : Thumbnail: ${it.thumbnail}")
-            Log.e("TAG", "onSuccess: "+it.thumbnail, )
+            Log.e("TAG", "onSuccess: " + it.thumbnail)
             builder.append("\n")
             builder.append("Feed : Feed Type: ${it.feedType}")
             builder.append("\n")

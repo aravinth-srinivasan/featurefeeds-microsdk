@@ -2,6 +2,7 @@ package com.raweng.dfe.microsdk.featurefeeds.model
 
 data class FeaturedFeedModel(
     var title: String? = "",
+    var isoDate:String? = "",
     var updatedAt: String? = "",
     var uid: String? = "",
     var order: Int? = 0,

@@ -86,7 +86,7 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
                 if (item.order != null) {
                     item.order
                 } else {
-                    item.updatedAt?.let { Utils.parseDate(it) }
+                    ((-1) * (item.isoDate?.let { Utils.parseDate(it)?.time } ?: 0))
                 }
             })
             sortedList
