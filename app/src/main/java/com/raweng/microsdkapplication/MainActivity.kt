@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatButton
+import com.google.gson.Gson
 import com.raweng.dfe.DFEManager
 import com.raweng.dfe.microsdk.featurefeeds.FeatureFeedsMicroSDK
 import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
@@ -23,6 +24,8 @@ class MainActivity : AppCompatActivity() {
     var csAccessToken = ""
     var csEnv = ""
     var csUrl = ""
+    val builder = StringBuilder()
+    var featureFeeds = listOf<FeaturedFeedModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +33,9 @@ class MainActivity : AppCompatActivity() {
         fetchConfigAndInitMicroSDK()
         findViewById<AppCompatButton>(R.id.btnFetch).setOnClickListener {
             fetchFeatureFeed()
+        }
+        findViewById<AppCompatButton>(R.id.btnFetchFeed).setOnClickListener {
+            getFeedModel()
         }
     }
 
@@ -49,13 +55,20 @@ class MainActivity : AppCompatActivity() {
                             environment = csEnv,
                             appScheme = "bulls",
                             dateFormatType = DateFormat.HOURS_AGO,
-                            dateFormat = "MM/dd/yyyy"
+                            imageFormat = "format=pjpg&auto=webp"
                         )
                     } else {
                         Log.e("TAG", "onCompletion: " + p1.toString())
                     }
+
+                    Log.e("TAG", "onCompletion: csUrl: $csUrl" +
+                            " csApiKey: $csApiKey" +
+                        " csAccessToken: $csAccessToken" +
+                            "csEnv: $csEnv"
+                        , )
                 }
             })
+
     }
 
     private fun prepareData(apiData: MutableList<DFEConfigModel>) {
@@ -83,47 +96,15 @@ class MainActivity : AppCompatActivity() {
     private fun fetchFeatureFeed() {
         findViewById<TextView>(R.id.textV).text = "Please wait fetching..."
         FeatureFeedsMicroSDK.getInstance()
-            .getFeatureFeed("featured_feeds",object : FeatureFeedResponseListener {
+            .getFeatureFeed("featured_feeds", object : FeatureFeedResponseListener {
                 override fun onSuccess(feeds: List<FeaturedFeedModel>) {
                     Log.e("TAG", "onSuccess: " + feeds.size)
-                    val builder = StringBuilder()
+                    val gson  = Gson()
+                    val finalOutput = gson.toJson(feeds)
+                    Log.e("TAG", "onSuccess: $finalOutput", )
+                    featureFeeds = feeds
                     feeds.forEach {
-                        builder.append("Title : ${it.title} - Order: ${it.order}")
-                        builder.append("\n")
-                        builder.append("UpdatedAt : ${it.updatedAt} - Uid: ${it.uid}")
-                        builder.append("\n")
-                        it.feeds?.forEach {
-                            builder.append("\n")
-                            builder.append("\n")
-                            builder.append("Feed Title: ${it.title}")
-                            builder.append("\n")
-                            builder.append("Feed : Date: ${it.date}")
-                            builder.append("\n")
-                            builder.append("Feed : Thumbnail: ${it.thumbnail}")
-                            Log.e("TAG", "onSuccess: "+it.thumbnail, )
-                            builder.append("\n")
-                            builder.append("Feed : Feed Type: ${it.feedType}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Id: ${it.feedId}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Position: ${it.feedPosition}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Label: ${it.label}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Hide Title: ${it.hideTitle}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Hide Date: ${it.hideDate}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Hide Label: ${it.hideLabel}")
-                            builder.append("\n")
-                            builder.append("Feed : Feed Hide Data Source: ${it.dataSource}")
-                            builder.append("\n")
-                            builder.append("Feed : Link: ${it.clickthroughLink}")
-                            builder.append("\n")
-                            Log.e("TAG", "onSuccess: ${it.feedType} "+it.date, )
-                            builder.append("\n")
-                            builder.append("\n")
-                        }
+                        onPrepareBuilder(it)
 
                     }
                     findViewById<TextView>(R.id.textV).text = builder.toString()
@@ -134,5 +115,101 @@ class MainActivity : AppCompatActivity() {
                     findViewById<TextView>(R.id.textV).text = error.errorMsg
                 }
             })
+    }
+    private fun getFeedModel(){
+        builder.clear()
+        findViewById<TextView>(R.id.textV).text = "Please wait querying..."
+        try {
+            val uid  = featureFeeds[0].uid
+            val feed = FeatureFeedsMicroSDK.getInstance().getFeaturedFeedsModel(uid)
+            feed?.let {
+                onPrepareBuilder(feed)
+            }
+            findViewById<TextView>(R.id.textV).text = builder.toString()
+        }catch (e:Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun onPrepareBuilder(it:FeaturedFeedModel){
+        builder.append("Title : ${it.title} - Order: ${it.order}")
+        builder.append("\n")
+        builder.append("UpdatedAt : ${it.updatedAt} - Uid: ${it.uid}")
+        builder.append("\n")
+        it.feeds?.forEach {
+            builder.append("\n")
+            builder.append("\n")
+            builder.append("Feed Title: ${it.title}")
+            builder.append("\n")
+            builder.append("Feed : Date: ${it.date}")
+            builder.append("\n")
+            builder.append("Feed : Thumbnail: ${it.thumbnail}")
+            Log.e("TAG", "onSuccess: "+it.thumbnail, )
+            builder.append("\n")
+            builder.append("Feed : Feed Type: ${it.feedType}")
+            builder.append("\n")
+            builder.append("Feed : Feed Id: ${it.feedId}")
+            builder.append("\n")
+            builder.append("Feed : Feed Position: ${it.feedPosition}")
+            builder.append("\n")
+            builder.append("Feed : Feed Label: ${it.label}")
+            builder.append("\n")
+            builder.append("Feed : Feed Hide Title: ${it.hideTitle}")
+            builder.append("\n")
+            builder.append("Feed : Feed Hide Date: ${it.hideDate}")
+            builder.append("\n")
+            builder.append("Feed : Feed Hide Label: ${it.hideLabel}")
+            builder.append("\n")
+            builder.append("Feed : Feed Hide Data Source: ${it.dataSource}")
+            builder.append("\n")
+            builder.append("Feed : ClickthroughLink: ${it.clickthroughLink}")
+            builder.append("\n")
+            builder.append("Feed : Link: ${it.link}")
+            builder.append("\n")
+            builder.append("Feed : Content: ${it.content?.take(100)}")
+            builder.append("\n")
+            builder.append("Feed : Additional Content: ${it.additionalContent?.take(100)}")
+            builder.append("\n")
+            builder.append("\n")
+            builder.append("\n")
+            if (!it.galleryImages.isNullOrEmpty()) {
+                builder.append("Feed : Gallery Images: ")
+                builder.append("\n")
+                builder.append("\n")
+                it.galleryImages?.mapIndexed { index, galleryModel ->
+                    builder.append("${(index+1)} Gallery Title : ${it.title}")
+                    builder.append("\n")
+                    builder.append("${(index+1)} Gallery Url : ${galleryModel.url}")
+                    builder.append("\n")
+                    builder.append("${(index+1)} Gallery Caption : ${galleryModel.caption}")
+                    builder.append("\n")
+                    builder.append("${(index+1)} Gallery Type : ${galleryModel.imageType}")
+                    builder.append("\n")
+                    builder.append("\n")
+                }
+            }
+
+            if (it.author !=null) {
+                builder.append("Feed : Author: ")
+                builder.append("\n")
+                builder.append("\n")
+                builder.append("Feed : Author: Name: ${it.author?.authorName}")
+                builder.append("\n")
+                builder.append("Feed : Author: Organization: ${it.author?.organization}")
+                builder.append("\n")
+                builder.append("Feed : Author: Image: ${it.author?.authorImage}")
+                builder.append("\n")
+                builder.append("Feed : Author: isFeaturedAuthor: ${it.author?.isFeaturedAuthor}")
+                builder.append("\n")
+                builder.append("Feed : Author: Description: ${it.author?.description}")
+                builder.append("\n")
+                builder.append("Feed : Author: isNbaStaff: ${it.author?.isNbaStaff}")
+                builder.append("\n")
+                builder.append("\n")
+            }
+            Log.e("TAG", "onSuccess: ${it.feedType} "+it.date)
+            builder.append("\n")
+            builder.append("\n")
+        }
     }
 }
