@@ -29,6 +29,9 @@ def fileFilter = [
 def fileFilterInclude = [
         'manager/LocalApiManager.kt',
         'data/FeatureFeedRepositoryImpl.kt',
+        'mapper/FeaturedFeedsMapper.kt',
+        'mapper/DFENBAFeedMapper.kt',
+        'utils/Utils.kt',
         'FeatureFeedsMicroSDK.kt',
 ]
 

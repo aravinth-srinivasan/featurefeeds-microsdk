@@ -274,7 +274,7 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
             feedType?.article != null -> feedType.article?.hideLabel
             feedType?.video != null -> feedType.video?.hideLabel
             feedType?.webUrl != null -> feedType.webUrl?.hideLabel
-            feedType?.gallery != null -> feedType.gallery?.hideDate
+            feedType?.gallery != null -> feedType.gallery?.hideLabel
             feedType?.nbaFeeds != null -> false
             else -> null
         }
