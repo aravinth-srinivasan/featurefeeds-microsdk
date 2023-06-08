@@ -7,4 +7,4 @@ data class GalleryModel(
     var imageTitle: String? = null,
     var url: String? = null,
     var imageType: String? = null,
-)
+): java.io.Serializable

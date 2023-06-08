@@ -46,4 +46,4 @@ data class AuthorModel(
     var isNbaStaff: Boolean? = null,
     var description: String? = null,
     var isFeaturedAuthor: Boolean? = null
-)
+): java.io.Serializable

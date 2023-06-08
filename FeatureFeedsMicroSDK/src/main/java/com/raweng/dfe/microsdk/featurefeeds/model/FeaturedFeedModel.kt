@@ -9,7 +9,7 @@ data class FeaturedFeedModel(
     var uid: String? = "",
     var order: Int? = 0,
     var feeds: List<FeedModel>? = null
-) {
+): java.io.Serializable {
     @Serializable
     data class FeedModel(
         var title: String? = null,
