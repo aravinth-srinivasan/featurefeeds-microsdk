@@ -1,5 +1,7 @@
 package com.raweng.dfe.microsdk.featurefeeds.model
 
+import kotlinx.serialization.Serializable
+@Serializable
 data class FeaturedFeedModel(
     var title: String? = "",
     var isoDate:String? = "",
@@ -8,6 +10,7 @@ data class FeaturedFeedModel(
     var order: Int? = 0,
     var feeds: List<FeedModel>? = null
 ) {
+    @Serializable
     data class FeedModel(
         var title: String? = null,
         var date: String? = null,
@@ -24,8 +27,8 @@ data class FeaturedFeedModel(
         var link: String? = null,
         var content: String? = null,
         var additionalContent: String? = null,
-        var galleryImages: List<ImageModel>? = null,
-        var spotlightImage: Any? = null,
+        var galleryImages: List<GalleryModel>? = null,
+        var spotlightImage: String? = null,
         var author: AuthorModel? = null,
     )
 }

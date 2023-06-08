@@ -3,7 +3,7 @@ package com.raweng.dfe.microsdk.featurefeeds.mapper
 import com.raweng.dfe.microsdk.featurefeeds.FeatureFeedsMicroSDK
 import com.raweng.dfe.microsdk.featurefeeds.model.FeatureFeedResponse
 import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
-import com.raweng.dfe.microsdk.featurefeeds.model.ImageModel
+import com.raweng.dfe.microsdk.featurefeeds.model.GalleryModel
 import com.raweng.dfe.microsdk.featurefeeds.type.DateFormat
 import com.raweng.dfe.microsdk.featurefeeds.type.FeedType
 import com.raweng.dfe.microsdk.featurefeeds.type.SourceType
@@ -67,7 +67,7 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
             ).apply {
                 clickthroughLink = getGenerateClickThroughLink(mFeatureFeedModel, this)
             }
-        } ?: arrayListOf()
+        } ?: listOf()
     }
 
     private fun getSpotlightImage(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
@@ -76,10 +76,9 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
             feedType?.video != null -> ""
             feedType?.webUrl != null -> ""
             feedType?.gallery != null -> ""
-            feedType?.nbaFeeds != null -> ""
+            feedType?.nbaFeeds != null -> feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.media?.getOrNull(0)?.portrait.orEmpty()
             else -> null
         }
-
         return generateCMSImageUrl(url)
     }
 
@@ -105,10 +104,10 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
         }
     }
 
-    private fun getGalleryImages(feedType: FeatureFeedResponse.Entry.FeedType?): List<ImageModel>? {
+    private fun getGalleryImages(feedType: FeatureFeedResponse.Entry.FeedType?): List<GalleryModel>? {
         return if (feedType?.gallery != null) {
             feedType.gallery?.images?.map {
-                ImageModel(
+                GalleryModel(
                     url = generateCMSImageUrl(it?.image?.url.orEmpty()),
                     imageTitle = it?.image?.title.orEmpty(),
                     imageType = it?.image?.contentType.orEmpty(),
@@ -117,7 +116,7 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
             }
         } else if (feedType?.nbaFeeds?.nbaFeeds?.nbaFeedModel?.media != null) {
             feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.media?.map {
-                ImageModel(
+                GalleryModel(
                     url = generateCMSImageUrl(it?.source.orEmpty()),
                     caption = it?.caption.orEmpty(),
                     imageTitle = it?.title.orEmpty(),
@@ -158,21 +157,10 @@ class FeaturedFeedsMapper(private val featuredFeeds: FeatureFeedResponse.Entry) 
             feedType?.video != null -> FeedType.VIDEO.toString()
             feedType?.webUrl != null -> FeedType.WEB_URL.toString()
             feedType?.gallery != null -> FeedType.GALLERY.toString()
-            feedType?.nbaFeeds != null -> getDFEFeedType(feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.feedType)
+            feedType?.nbaFeeds != null -> feedType.nbaFeeds?.nbaFeeds?.nbaFeedModel?.feedType?.uppercase() ?: ""
             else -> null
         }
     }
-
-    private fun getDFEFeedType(feedType: String?): String {
-        return when (feedType?.uppercase()) {
-            FeedType.ARTICLE.toString() -> FeedType.ARTICLE.toString()
-            FeedType.VIDEO.toString() -> FeedType.VIDEO.toString()
-            FeedType.WEB_URL.toString() -> FeedType.WEB_URL.toString()
-            FeedType.GALLERY.toString() -> FeedType.GALLERY.toString()
-            else -> ""
-        }
-    }
-
 
     private fun getTitle(feedType: FeatureFeedResponse.Entry.FeedType?): String? {
         return when {

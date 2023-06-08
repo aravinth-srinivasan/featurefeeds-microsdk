@@ -1,11 +1,18 @@
 package com.raweng.dfe.microsdk.featurefeeds
 
 import android.content.Context
+import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.contentstack.sdk.Stack
 import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
 import com.raweng.dfe.microsdk.featurefeeds.manager.LocalApiManager
+import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
+import com.raweng.dfe.microsdk.featurefeeds.type.DateFormat
+import com.raweng.dfe.microsdk.featurefeeds.utils.MicroError
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.spyk
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,7 +46,6 @@ class FeatureFeedsMicroSDKTest {
             FeatureFeedsMicroSDK::class.java.getDeclaredField("csAccessToken")
         csAccessTokenField.isAccessible = true
 
-        // Test when all fields are not empty or null
         csHostUrlField.set(null, "https://test.com")
         csApiKeyField.set(null, "api_key")
         environmentField.set(null, "environment")
@@ -63,7 +69,7 @@ class FeatureFeedsMicroSDKTest {
 
 
     @Test
-    fun testsetupLocalApiManager() {
+    fun test_setupLocalApiManager() {
         // Mock dependencies
         val stackMock: Stack = mock(Stack::class.java)
         val nullableStack: Stack? = null
@@ -96,38 +102,169 @@ class FeatureFeedsMicroSDKTest {
     }
 
     @Test
-    fun testGetFeatureFeed() {
-        val responseListenerMock: FeatureFeedResponseListener =
-            mock(FeatureFeedResponseListener::class.java)
-        val stackMock: Stack = mock(Stack::class.java)
-        val localApiManagerMock = LocalApiManager(stackMock)
-
-        val nullableLocalApiManager: LocalApiManager? = null
-        val featureFeedsMicroSDK = FeatureFeedsMicroSDK.getInstance()
+    fun test_getFeaturedFeedsModel() {
+        val localApiManager: LocalApiManager = mockk()
+        val featureFeedsMicroSDK = spyk<FeatureFeedsMicroSDK>()
+        val model = mockk<FeaturedFeedModel>()
 
         val localApiManagerField: Field =
-            FeatureFeedsMicroSDK::class.java.getDeclaredField("localApiManager")
+            featureFeedsMicroSDK::class.java.getDeclaredField("localApiManager")
         localApiManagerField.isAccessible = true
-        // Case 1: localApiManager is null
+        localApiManagerField.set(featureFeedsMicroSDK, localApiManager)
+
+        val uid = "102033"
+        every { featureFeedsMicroSDK.getFeaturedFeedsModel(uid) } returns model
+        val result = featureFeedsMicroSDK.getFeaturedFeedsModel(uid)
+        assertEquals(model, result)
+
+        every { localApiManager.getFeaturedFeedsModel("") } returns null
+
+        val resultIfEmpty = featureFeedsMicroSDK.getFeaturedFeedsModel("")
+        assertEquals(null, resultIfEmpty)
+
+    }
+
+    @Test
+    fun test_getFeatureFeed() {
+        val responseListenerMock: FeatureFeedResponseListener =
+            object : FeatureFeedResponseListener {
+                override fun onSuccess(feeds: List<FeaturedFeedModel>) {
+                    assertEquals(listOf(FeaturedFeedModel()), feeds)
+                }
+
+                override fun onError(error: MicroError) {
+                    Log.d("TAG", "onError: " + error.errorMsg)
+                    assertEquals("test error", error.errorMsg)
+                }
+            }
+
+        val nullableLocalApiManager: LocalApiManager? = null
+        val featureFeedsMicroSDK = spyk<FeatureFeedsMicroSDK>()
+
+        val localApiManagerField: Field =
+            featureFeedsMicroSDK::class.java.getDeclaredField("localApiManager")
+        localApiManagerField.isAccessible = true
         localApiManagerField.set(featureFeedsMicroSDK, nullableLocalApiManager)
-        featureFeedsMicroSDK.getFeatureFeed("content_type", responseListenerMock)
-        assertNull(localApiManagerField)
 
-        // Call getFeatureFeed()
-        //featureFeedsMicroSDK.getFeatureFeed("csContentType", responseListenerMock)
+        val csContentType = "exampleContentType"
+        featureFeedsMicroSDK.getFeatureFeed(csContentType, responseListenerMock)
+        assertNull(nullableLocalApiManager)
 
-        // Assert that localApiManager is still null
-//        assertNull(featureFeedsMicroSDK.localApiManager)
 
-        // Case 2: localApiManager is not null
-        /*val localApiManagerMock: LocalApiManager = mock(LocalApiManager::class.java)
-        featureFeedsMicroSDK.localApiManager = localApiManagerMock*/
 
-        // Call getFeatureFeed()
-        //featureFeedsMicroSDK.getFeatureFeed("csContentType", responseListenerMock)
+        every {
+            featureFeedsMicroSDK.getFeatureFeed(
+                csContentType,
+                any()
+            )
+        } answers {
+            val listener = secondArg<FeatureFeedResponseListener>()
+            listener.onSuccess(listOf(FeaturedFeedModel()))
+        }
+        featureFeedsMicroSDK.getFeatureFeed(csContentType, responseListenerMock)
 
-        // Assert that localApiManager is still not null
-        //assertNotNull(featureFeedsMicroSDK.localApiManager)
+        every {
+            featureFeedsMicroSDK.getFeatureFeed(
+                csContentType,
+                any()
+            )
+        } answers {
+            val listener = secondArg<FeatureFeedResponseListener>()
+            listener.onError(MicroError(errorMsg = "test error"))
+        }
+    }
+
+
+    @Test
+    fun test_initialize() {
+
+        val csHostUrlField: Field = FeatureFeedsMicroSDK::class.java.getDeclaredField("csHostUrl")
+        csHostUrlField.isAccessible = true
+
+        val csApiKeyField: Field = FeatureFeedsMicroSDK::class.java.getDeclaredField("csApiKey")
+        csApiKeyField.isAccessible = true
+
+        val environmentField: Field =
+            FeatureFeedsMicroSDK::class.java.getDeclaredField("environment")
+        environmentField.isAccessible = true
+
+        val csAccessTokenField: Field =
+            FeatureFeedsMicroSDK::class.java.getDeclaredField("csAccessToken")
+        csAccessTokenField.isAccessible = true
+
+        val appSchemeField: Field =
+            FeatureFeedsMicroSDK::class.java.getDeclaredField("appScheme")
+        appSchemeField.isAccessible = true
+
+        val dateFormatTypeField: Field =
+            FeatureFeedsMicroSDK::class.java.getDeclaredField("dateFormatType")
+        dateFormatTypeField.isAccessible = true
+
+        val dateFormatField: Field =
+            FeatureFeedsMicroSDK::class.java.getDeclaredField("dateFormat")
+        dateFormatField.isAccessible = true
+
+
+        val imageFormatField: Field =
+            FeatureFeedsMicroSDK::class.java.getDeclaredField("imageFormat")
+        imageFormatField.isAccessible = true
+
+        val expectedCSApiKey = "api121133455"
+        val expectedCSHostUrl = "cnd.url-test.com"
+        val expectedEnvironment = "dev"
+        val expectedCSAccessToken = "121324der44433"
+        val expectedAppScheme = "bulls"
+        val expectedDateFormatType = DateFormat.HOURS_AGO
+        val expectedDateFormat = "dd/MM/yyyy"
+        val expectedImageFormat = "auto?webp"
+
+        FeatureFeedsMicroSDK.initialize(
+            context,
+            csApiKey = expectedCSApiKey,
+            csHostUrl = expectedCSHostUrl,
+            environment = expectedEnvironment,
+            csAccessToken = expectedCSAccessToken,
+            appScheme = expectedAppScheme,
+            dateFormatType = expectedDateFormatType,
+            dateFormat = expectedDateFormat,
+            imageFormat = expectedImageFormat
+        )
+
+        assertEquals(expectedCSApiKey, csApiKeyField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedCSHostUrl, csHostUrlField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedEnvironment, environmentField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedCSAccessToken, csAccessTokenField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedAppScheme, appSchemeField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedDateFormatType, dateFormatTypeField.get(FeatureFeedsMicroSDK) as DateFormat)
+        assertEquals(expectedDateFormat, dateFormatField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedImageFormat, imageFormatField.get(FeatureFeedsMicroSDK) as String)
+
+
+
+
+
+
+        FeatureFeedsMicroSDK.initialize(
+            context,
+            csApiKey = expectedCSApiKey,
+            csHostUrl = expectedCSHostUrl,
+            environment = expectedEnvironment,
+            csAccessToken = expectedCSAccessToken,
+            appScheme = expectedAppScheme,
+            dateFormatType = expectedDateFormatType,
+            dateFormat = null,
+            imageFormat = expectedImageFormat
+        )
+
+        assertEquals(expectedCSApiKey, csApiKeyField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedCSHostUrl, csHostUrlField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedEnvironment, environmentField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedCSAccessToken, csAccessTokenField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedAppScheme, appSchemeField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedDateFormatType, dateFormatTypeField.get(FeatureFeedsMicroSDK) as DateFormat)
+        assertEquals("MMMM dd, yyyy", dateFormatField.get(FeatureFeedsMicroSDK) as String)
+        assertEquals(expectedImageFormat, imageFormatField.get(FeatureFeedsMicroSDK) as String)
+
     }
 
 }

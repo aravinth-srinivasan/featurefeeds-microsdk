@@ -1,6 +1,7 @@
 package com.raweng.dfe.microsdk.featurefeeds.model
 
 import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.Serializable
 import java.util.Date
 
 data class NbaFeedModel(
@@ -30,13 +31,14 @@ data class NbaFeedModel(
         var source: String? = null,
         var caption: String? = null,
         var type: String? = null,
-        var title: String? = null
+        var title: String? = null,
+        var portrait: String? = null,
     )
 
     data class Video(var url: String? = null)
 
 }
-
+@Serializable
 data class AuthorModel(
     var authorName: String? = null,
     var organization: String? = null,

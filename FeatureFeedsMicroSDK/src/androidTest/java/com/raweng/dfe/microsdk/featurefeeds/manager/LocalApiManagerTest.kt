@@ -1,7 +1,5 @@
 package com.raweng.dfe.microsdk.featurefeeds.manager
 
-import android.content.Context
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.raweng.dfe.microsdk.featurefeeds.listener.FeatureFeedResponseListener
 import com.raweng.dfe.microsdk.featurefeeds.model.FeaturedFeedModel
@@ -14,11 +12,6 @@ import org.mockito.Mockito.*
 
 @RunWith(AndroidJUnit4::class)
 class LocalApiManagerTest {
-
-    private lateinit var localApiManager: LocalApiManager
-
-    private val context = ApplicationProvider.getApplicationContext<Context>()
-
 
 
     @Test

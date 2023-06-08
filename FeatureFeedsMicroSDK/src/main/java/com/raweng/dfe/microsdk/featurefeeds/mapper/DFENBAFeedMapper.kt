@@ -19,32 +19,34 @@ class DFENBAFeedMapper(private val feedPosition: Int, private val dfeFeedModel: 
             additionalContent = dfeFeedModel.additionalContent
             video = getVideo()
             webUrl = dfeFeedModel.webUrl
-            author = dfeFeedModel.`realmGet$author`().let {
+            author = dfeFeedModel.`realmGet$author`()?.let {
                 AuthorModel().apply {
                     authorImage = it.authorPhoto
                     organization = it.organization
                     isNbaStaff = it.isIsNbaStaff
                     description = it.description
                     isFeaturedAuthor = it.isFeaturedAuthor
-                    authorName = it.name.orEmpty()
+                    authorName = it.name
                 }
             }
         }
     }
 
-    private fun getMedia(): List<NbaFeedModel.FeedMedia> {
-        return dfeFeedModel.media.map {
+    private fun getMedia(): List<NbaFeedModel.FeedMedia>? {
+        return dfeFeedModel.media?.map {
             NbaFeedModel.FeedMedia().apply {
                 thumbnail = it.thumbnail
                 source = it.source
                 caption = it.caption
                 type = it.type
+                portrait = it.portrait
+
             }
         }
     }
 
-    private fun getVideo(): List<NbaFeedModel.Video> {
-        return dfeFeedModel.video.map {
+    private fun getVideo(): List<NbaFeedModel.Video>? {
+        return dfeFeedModel.video?.map {
             NbaFeedModel.Video().apply {
                 url = it.url
             }

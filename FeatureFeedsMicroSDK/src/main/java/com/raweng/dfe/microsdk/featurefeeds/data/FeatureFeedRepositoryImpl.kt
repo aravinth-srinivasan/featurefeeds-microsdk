@@ -181,7 +181,7 @@ class FeatureFeedRepositoryImpl(private val stack: Stack) : FeatureFeedRepositor
 
     private fun getFields(): String {
         return "uid,nid,title,published_date,feed_type,category," +
-                "media{thumbnail,source,caption, type}," +
+                "media{thumbnail,source,caption, type, portrait}," +
                 "content,additional_content,web_url," +
                 "author { name organization author_photo is_nba_staff description featured_author }"
     }
